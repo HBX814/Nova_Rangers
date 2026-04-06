@@ -1,0 +1,136 @@
+{
+  "theme": "Light",
+  "archetype": "Archetype 4 (Swiss & High-Contrast)",
+  "design_philosophy": "Objective, rigid, and highly functional dashboard. Color exists strictly as a functional element to guide action or indicate status. 95% of the UI must be monochrome, embodying 'The Control Room' aesthetic.",
+  "typography": {
+    "fonts": [
+      {
+        "name": "Outfit",
+        "usage": "Primary font for all headings, subheadings, and UI body text. Exploit radical weight contrasts (e.g., font-light next to font-black) to build hierarchy.",
+        "fallback": "sans-serif"
+      },
+      {
+        "name": "JetBrains Mono",
+        "usage": "Exclusively used for File paths, API routes, environment variables, technical terms, and component tags.",
+        "fallback": "monospace"
+      }
+    ],
+    "scale": {
+      "h1": "text-4xl sm:text-5xl tracking-tight leading-none font-light",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-medium",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "body": "text-base leading-relaxed text-slate-800",
+      "mono_small": "text-xs font-mono tracking-tight",
+      "overline": "uppercase text-xs tracking-[0.2em] font-bold text-slate-500"
+    }
+  },
+  "colors": {
+    "background": "#FFFFFF",
+    "foreground": "#0A0B0D",
+    "muted": "#F3F4F6",
+    "muted_foreground": "#6B7280",
+    "border": "#E5E7EB",
+    "primary": "#002FA7",
+    "primary_foreground": "#FFFFFF",
+    "status": {
+      "get": "#0047FF",
+      "post": "#00C48C",
+      "put": "#FFD000",
+      "delete": "#FF3B30",
+      "info": "#1A73E8"
+    },
+    "forbidden_colors": [
+      "#9D4CDD",
+      "#1B93A4",
+      "#7351B7"
+    ]
+  },
+  "spacing_and_layout": {
+    "strategy": "The 'Control Room' Grid",
+    "container": "w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8",
+    "grid_system": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6",
+    "spacing_scale": "Use generous padding inside containers (p-6 or p-8) to ensure breathing room.",
+    "alignment": "Strict left-alignment for dense content, tables, and lists."
+  },
+  "surface_strategies": {
+    "header": "Crystal Glassmorphism: bg-white/70 backdrop-blur-xl border-b border-slate-200 shadow-sm z-50 sticky top-0.",
+    "dashboard_widgets": "Flat, solid white or off-white surfaces with a sharp 1px border (border-slate-200). Avoid rounded corners entirely or use minimal radius (rounded-sm max). No soft diffuse shadows—use solid colored offset shadows or crisp drop-shadows on hover.",
+    "code_blocks": "Retro-Futurism Terminal: Deep black background (#0A0B0D) with high-contrast text (e.g., green/white). Includes scanlines or minimal styling."
+  },
+  "components_and_sections": [
+    {
+      "name": "Header Navigation",
+      "description": "Sticky nav displaying 'CommunityPulse' scaffold dashboard title. Use radical font contrast (e.g., 'Community' in font-light, 'Pulse' in font-black). Includes 'Deploy Scaffold' mock CTA.",
+      "implementation": "Pure HTML/Tailwind. Ensure data-testid on links."
+    },
+    {
+      "name": "Architecture Overview Hero",
+      "description": "Spans the full grid (col-span-full). Displays a high-level summary of the scaffold. Integrates the 'black and white network of dots' image as a heavily faded background (opacity-10).",
+      "implementation": "Pure HTML/Tailwind container with absolute positioning for the image."
+    },
+    {
+      "name": "File Tree Viewer",
+      "description": "A sidebar-like block spanning col-span-1 row-span-2. Visualizes the monorepo folder structure using folder/file icons and monospace font.",
+      "implementation": "Custom recursive list component using Tailwind and Phosphor/Lucide icons."
+    },
+    {
+      "name": "Technology Stack Cards",
+      "description": "A grid of small cards for FastAPI, Flutter, Google ADK, Firestore, BigQuery, Superset. Stark aesthetic, monochrome icons with slight hover pop.",
+      "implementation": "Shadcn Card or pure div. Keep it cardless/rectangular."
+    },
+    {
+      "name": "Agent Pipeline Stages",
+      "description": "Visualizes NeedsClassifier -> DeduplicationAgent -> PriorityRanker -> VolunteerMatcher. Display as a horizontal or vertical flowchart with connecting lines.",
+      "implementation": "CSS grids/flexbox with arrow icons between nodes. High-contrast border blocks."
+    },
+    {
+      "name": "API Routes",
+      "description": "A highly structured table listing endpoints. Methods (GET/POST) are highlighted using crisp, colored rectangular badges.",
+      "implementation": "Shadcn Table + Custom Badge styling (sharp edges)."
+    },
+    {
+      "name": "Pydantic Models Overview",
+      "description": "A dense list or accordion showing schema models (e.g., VolunteerProfile, CommunityNeed).",
+      "implementation": "Shadcn Accordion customized to look technical and sharp."
+    },
+    {
+      "name": "Environment Variables Summary",
+      "description": "A terminal-style UI block summarizing .env variables necessary for the scaffold. Col-span-full or half.",
+      "implementation": "Pure HTML/Tailwind code block (bg-gray-950 text-green-400)."
+    }
+  ],
+  "motion_and_interactions": {
+    "hover_states": "Interactive elements should not just change color. Cards should lift slightly (-translate-y-1) and cast a sharp, 1px solid offset shadow (e.g., shadow-[4px_4px_0px_#0A0B0D]).",
+    "transitions": "Use 'transition-all duration-200 ease-out'.",
+    "accessibility": "Respect prefers-reduced-motion."
+  },
+  "media_and_icons": {
+    "icon_library": "@phosphor-icons/react",
+    "install_command": "yarn add @phosphor-icons/react",
+    "icon_style": "Use the 'regular' or 'bold' weight for Phosphor icons to maintain the technical, dense look.",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1683447551794-1c287cd42675?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGRhdGElMjBuZXR3b3JrJTIwbm9kZXN8ZW58MHx8fHwxNzc1NDcyMDkwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Black and white network of dots",
+        "category": "Architecture Overview Background",
+        "instructions": "Use as a subtle texture overlay (opacity: 0.05 - 0.1) inside the main architecture overview block."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1706806595208-0e823368f240?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjB2b2x1bnRlZXJ8ZW58MHx8fHwxNzc1NDcyMDkwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Women talking in hallway",
+        "category": "Context / Mission Block",
+        "instructions": "Use with heavy CSS grayscale filters if utilized in a 'Mission/Context' card to ensure it matches the high-contrast Swiss archetype."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Run 'yarn add @phosphor-icons/react' before building components.",
+    "Build a purely read-only dashboard. The focus is exclusively on layout, typography, and density.",
+    "NEVER use Shadcn defaults without tailoring them to the Swiss & High-Contrast archetype. Strip away soft border-radius; use sharp, 1px lines (e.g., rounded-none).",
+    "Use JetBrains Mono for all code references, file paths, and environment variable names.",
+    "Include 'data-testid' on ALL major components, cards, navigation links, and expanding elements.",
+    "Layout must adhere to 'The Control Room Grid'. Do not build loose, centered marketing layouts. Pack data tightly and align left.",
+    "DO NOT output placeholder images. Strictly use the provided image URLs.",
+    "Do NOT use Inter, Space Grotesk, Roboto, or standard sans-serifs for headings. Prioritize the designated fonts (Outfit, JetBrains Mono) with Google Fonts imports if not present."
+  ]
+}

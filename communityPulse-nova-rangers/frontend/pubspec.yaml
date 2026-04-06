@@ -1,0 +1,78 @@
+name: communitypulse_flutter
+description: CommunityPulse — Volunteer coordination platform for social-impact NGOs in Madhya Pradesh
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.1
+
+  # Networking
+  dio: ^5.7.0
+  retrofit: ^4.4.1
+
+  # Maps & Location
+  google_maps_flutter: ^2.10.0
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
+
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  firebase_messaging: ^15.1.5
+  cloud_firestore: ^5.5.0
+
+  # Local storage
+  shared_preferences: ^2.3.3
+  hive_flutter: ^1.1.0
+
+  # Utilities
+  intl: ^0.19.0
+  url_launcher: ^6.3.1
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  connectivity_plus: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.6.1
+  retrofit_generator: ^9.1.5
+  json_serializable: ^6.8.0
+  freezed: ^2.5.7
+  freezed_annotation: ^2.4.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+        - asset: assets/fonts/NotoSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/NotoSans-Light.ttf
+          weight: 300
