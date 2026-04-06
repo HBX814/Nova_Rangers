@@ -1,34 +1,135 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* CommunityPulse Scaffold Preview — Swiss Control Room Aesthetic */
+
+/* Sharp offset shadow for hover on cards */
+.cp-card {
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  transition: all 200ms ease-out;
+}
+.cp-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0px #0A0B0D;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Terminal block */
+.terminal-block {
+  background: #0A0B0D;
+  color: #4ADE80;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  padding: 1.5rem;
+  overflow-x: auto;
+  border: 1px solid #374151;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Pipeline connector arrow */
+.pipeline-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #002FA7;
 }
 
-.App-link {
-    color: #61dafb;
+/* Method badges */
+.method-get {
+  background: #0047FF;
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+}
+.method-post {
+  background: #00C48C;
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+}
+.method-patch {
+  background: #FFD000;
+  color: #0A0B0D;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+}
+.method-delete {
+  background: #FF3B30;
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* File tree */
+.tree-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 2px 0;
+  color: #374151;
+}
+.tree-folder {
+  color: #002FA7;
+  font-weight: 600;
+}
+
+/* Section headers */
+.section-overline {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  color: #6B7280;
+  margin-bottom: 0.5rem;
+}
+
+/* Glassmorphism header */
+.glass-header {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Model field tag */
+.field-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border: 1px solid #D1D5DB;
+  background: #F9FAFB;
+  color: #374151;
+  margin: 2px;
+}
+.field-type {
+  color: #002FA7;
+  font-weight: 600;
+}
+
+/* Scanline effect for terminal */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
 }
