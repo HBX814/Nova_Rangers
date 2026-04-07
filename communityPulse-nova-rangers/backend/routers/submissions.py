@@ -1,77 +1,89 @@
-"""
-Submissions Router
-==================
-Handles citizen / volunteer report submissions.
-The submission is validated, stored, and then published to Pub/Sub
-for processing by the Google ADK agent pipeline.
-"""
-
-from __future__ import annotations
-
-import logging
+import os
 import uuid
-from datetime import datetime, timezone
+import tempfile
+import logging
+from datetime import datetime
+from fastapi import APIRouter, File, UploadFile, Form, HTTPException
+from google.cloud import pubsub_v1
 
-from fastapi import APIRouter, HTTPException, status
+# Import db from backend.firebase_init
+from backend.firebase_init import db
 
-from backend.models.submission import SubmissionPayload
-from backend.services.firestore_client import get_firestore_client
-
+router = APIRouter(tags=["submissions"])
 logger = logging.getLogger(__name__)
-router = APIRouter()
 
+@router.post("/upload")
+async def upload_submission(
+    file: UploadFile = File(...),
+    org_id: str = Form(...),
+    submitted_by: str = Form(...)
+):
+    # Validate mimetype
+    allowed_mimetypes = {"application/pdf", "image/jpeg", "image/png"}
+    if file.content_type not in allowed_mimetypes:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only PDF, JPEG, and PNG are allowed.")
 
-@router.post("/", response_model=SubmissionPayload, status_code=status.HTTP_201_CREATED)
-async def create_submission(payload: SubmissionPayload):
-    """
-    Accept a new need report submission.
+    # Generate a UUID as submission_id
+    submission_id = str(uuid.uuid4())
+    
+    # Determine type based on mimetype
+    file_type = "pdf" if file.content_type == "application/pdf" else "image"
 
-    Steps:
-      1. Assign a unique submission_id and timestamp.
-      2. Persist to Firestore 'submissions' collection.
-      3. Publish a message to Pub/Sub topic so the agent pipeline processes it.
-    """
-    db = get_firestore_client()
+    # Save file bytes to a temp file
+    file_bytes = await file.read()
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(file_bytes)
 
-    payload.submission_id = str(uuid.uuid4())
-    payload.submitted_at = datetime.now(timezone.utc)
+    # Create a Firestore document in submission_queue collection
+    doc_ref = db.collection("submission_queue").document(submission_id)
+    doc_ref.set({
+        "submission_id": submission_id,
+        "org_id": org_id,
+        "submitted_by": submitted_by,
+        "file_name": file.filename,
+        "file_type": file_type,
+        "status": "PENDING",
+        "created_at": datetime.utcnow().isoformat(),
+        "processed": False,
+        "extracted_text": None
+    })
 
-    doc_data = payload.model_dump(mode="json")
-    db.collection("submissions").document(payload.submission_id).set(doc_data)
+    # Publish a Pub/Sub message
+    try:
+        topic_name = os.getenv("PUBSUB_TOPIC_SUBMISSION")
+        project_id = os.getenv("GCP_PROJECT_ID")
+        
+        if topic_name and project_id:
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(project_id, topic_name)
+            
+            message_data = submission_id.encode("utf-8")
+            future = publisher.publish(topic_path, data=message_data)
+            future.result()  # block until successful publish or raise exception
+        else:
+            logger.warning("Pub/Sub publish skipped: PUBSUB_TOPIC_SUBMISSION or GCP_PROJECT_ID missing in env.")
+    except Exception as e:
+        logger.error(f"Failed to publish submission {submission_id} to Pub/Sub: {e}")
 
-    # TODO: Publish to Pub/Sub topic for agent pipeline consumption
-    # from google.cloud import pubsub_v1
-    # publisher = pubsub_v1.PublisherClient()
-    # topic_path = publisher.topic_path(GCP_PROJECT_ID, PUBSUB_TOPIC_NEW_NEED)
-    # publisher.publish(topic_path, json.dumps(doc_data).encode("utf-8"))
+    return {
+        "submission_id": submission_id,
+        "status": "QUEUED"
+    }
 
-    logger.info("Submission %s created and queued for processing", payload.submission_id)
-    return payload
-
-
-@router.get("/", response_model=list[SubmissionPayload])
-async def list_submissions(limit: int = 50):
-    """List recent submissions, newest first."""
-    db = get_firestore_client()
-    docs = (
-        db.collection("submissions")
-        .order_by("submitted_at", direction="DESCENDING")
-        .limit(limit)
-        .stream()
-    )
-    results = []
-    for doc in docs:
-        data = doc.to_dict()
-        if data:
-            results.append(SubmissionPayload(**data))
-    return results
-
-
-@router.get("/{submission_id}", response_model=SubmissionPayload)
-async def get_submission(submission_id: str):
-    """Retrieve a single submission by ID."""
-    db = get_firestore_client()
-    snap = db.collection("submissions").document(submission_id).get()
-    if not snap.exists:
+@router.get("/{submission_id}/status")
+async def get_submission_status(submission_id: str):
+    doc_ref = db.collection("submission_queue").document(submission_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Submission not found")
-    return SubmissionPayload(**snap.to_dict())
+        
+    data = doc.to_dict()
+    
+    return {
+        "submission_id": data.get("submission_id"),
+        "status": data.get("status"),
+        "processed": data.get("processed"),
+        "extracted_text": data.get("extracted_text"),
+        "created_at": data.get("created_at")
+    }

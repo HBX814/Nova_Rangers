@@ -10,6 +10,17 @@ Initialises:
   • All API routers mounted under /api/v1
 """
 
+import os
+import sys
+
+# Add the project root to sys.path so 'backend' module can be imported
+# regardless of whether uvicorn is run from the root or inside 'backend/'
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -72,11 +83,9 @@ scheduler.add_job(
 # Routers
 # ---------------------------------------------------------------------------
 from backend.routers.submissions import router as submissions_router
-from backend.routers.volunteers import router as volunteers_router
 from backend.routers.needs import router as needs_router
-from backend.routers.organizations import router as organizations_router
+from backend.routers.volunteers import router as volunteers_router
 from backend.routers.analytics import router as analytics_router
-from backend.routers.auth import router as auth_router
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +116,7 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ALLOWED_ORIGINS if CORS_ALLOWED_ORIGINS != ["*"] else ["*"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -117,11 +126,9 @@ app.add_middleware(
 # Mount routers under /api/v1
 # ---------------------------------------------------------------------------
 app.include_router(submissions_router, prefix="/api/v1/submissions", tags=["Submissions"])
-app.include_router(volunteers_router, prefix="/api/v1/volunteers", tags=["Volunteers"])
 app.include_router(needs_router, prefix="/api/v1/needs", tags=["Needs"])
-app.include_router(organizations_router, prefix="/api/v1/organizations", tags=["Organizations"])
+app.include_router(volunteers_router, prefix="/api/v1/volunteers", tags=["Volunteers"])
 app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["Analytics"])
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +137,7 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 @app.get("/", tags=["Health"])
 async def health_check():
     return {
-        "status": "healthy",
-        "service": "CommunityPulse API",
+        "status": "ok",
+        "project": "communityPulse",
         "version": "0.1.0",
     }

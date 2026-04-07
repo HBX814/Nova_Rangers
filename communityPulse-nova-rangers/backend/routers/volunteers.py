@@ -1,139 +1,91 @@
-"""
-Volunteers Router
-=================
-CRUD operations for the 'volunteers' Firestore collection.
-"""
+from fastapi import APIRouter, HTTPException, Query, Path
+from typing import Optional
+from pydantic import BaseModel
+from backend.firebase_init import db
+from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud.firestore import Query as FirestoreQuery
 
-from __future__ import annotations
+router = APIRouter(tags=["volunteers"])
 
-import logging
-import uuid
-from datetime import date
+class StatusUpdate(BaseModel):
+    availability_status: str
 
-from fastapi import APIRouter, HTTPException, status
-from geopy.distance import geodesic
-import geohash2
-
-from backend.models.volunteer import Volunteer, VolunteerCreate, VolunteerUpdate
-from backend.services.firestore_client import get_firestore_client
-
-logger = logging.getLogger(__name__)
-router = APIRouter()
-
-
-def _compute_geohash(lat: float, lng: float, precision: int = 6) -> str:
-    """Compute a geohash string from lat/lng for proximity queries."""
-    return geohash2.encode(lat, lng, precision=precision)
-
-
-@router.post("/", response_model=Volunteer, status_code=status.HTTP_201_CREATED)
-async def register_volunteer(body: VolunteerCreate):
-    """Register a new volunteer."""
-    db = get_firestore_client()
-
-    vol = Volunteer(
-        volunteer_id=str(uuid.uuid4()),
-        name=body.name,
-        phone=body.phone,
-        skills=body.skills,
-        current_lat=body.current_lat,
-        current_lng=body.current_lng,
-        languages=body.languages,
-        fcm_token=body.fcm_token,
-        geohash=_compute_geohash(body.current_lat, body.current_lng),
-        joined_date=date.today(),
-    )
-
-    doc_data = vol.model_dump(mode="json")
-    db.collection("volunteers").document(vol.volunteer_id).set(doc_data)
-    logger.info("Volunteer %s registered", vol.volunteer_id)
-    return vol
-
-
-@router.get("/", response_model=list[Volunteer])
+@router.get("/")
 async def list_volunteers(
-    status_filter: str | None = None,
-    limit: int = 100,
+    status: Optional[str] = Query(None, description="Filter by availability_status"),
+    skill: Optional[str] = Query(None, description="Check if value is in skills array"),
+    limit: int = Query(20, ge=1, description="Limit the number of returned volunteers")
 ):
-    """List volunteers, optionally filtered by availability_status."""
-    db = get_firestore_client()
+    volunteers_ref = db.collection("volunteers")
+    query = volunteers_ref
 
-    query = db.collection("volunteers")
-    if status_filter:
-        query = query.where("availability_status", "==", status_filter)
+    if status:
+        query = query.where(filter=FieldFilter("availability_status", "==", status))
+    if skill:
+        query = query.where(filter=FieldFilter("skills", "array_contains", skill))
+    
     query = query.limit(limit)
-
-    results = []
-    for doc in query.stream():
+    docs = query.stream()
+    
+    volunteers = []
+    for doc in docs:
         data = doc.to_dict()
-        if data:
-            results.append(Volunteer(**data))
-    return results
+        data["id"] = doc.id
+        volunteers.append(data)
+        
+    return volunteers
 
-
-@router.get("/{volunteer_id}", response_model=Volunteer)
-async def get_volunteer(volunteer_id: str):
-    """Retrieve a single volunteer by ID."""
-    db = get_firestore_client()
-    snap = db.collection("volunteers").document(volunteer_id).get()
-    if not snap.exists:
+@router.get("/{volunteer_id}")
+async def get_volunteer(volunteer_id: str = Path(...)):
+    doc_ref = db.collection("volunteers").document(volunteer_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Volunteer not found")
-    return Volunteer(**snap.to_dict())
+        
+    data = doc.to_dict()
+    data["id"] = doc.id
+    return data
 
-
-@router.patch("/{volunteer_id}", response_model=Volunteer)
-async def update_volunteer(volunteer_id: str, body: VolunteerUpdate):
-    """Partially update a volunteer's profile."""
-    db = get_firestore_client()
-    snap = db.collection("volunteers").document(volunteer_id).get()
-    if not snap.exists:
-        raise HTTPException(status_code=404, detail="Volunteer not found")
-
-    updates = body.model_dump(exclude_none=True)
-
-    # Recompute geohash if location changed
-    if "current_lat" in updates or "current_lng" in updates:
-        existing = snap.to_dict()
-        lat = updates.get("current_lat", existing.get("current_lat", 0))
-        lng = updates.get("current_lng", existing.get("current_lng", 0))
-        updates["geohash"] = _compute_geohash(lat, lng)
-
-    db.collection("volunteers").document(volunteer_id).update(updates)
-
-    refreshed = db.collection("volunteers").document(volunteer_id).get()
-    return Volunteer(**refreshed.to_dict())
-
-
-@router.get("/nearby/", response_model=list[Volunteer])
-async def find_nearby_volunteers(
-    lat: float,
-    lng: float,
-    radius_km: float = 25.0,
-    limit: int = 20,
+@router.patch("/{volunteer_id}/status")
+async def update_volunteer_status(
+    status_update: StatusUpdate,
+    volunteer_id: str = Path(...)
 ):
-    """
-    Find available volunteers within a given radius of a location.
-    Uses in-memory distance filtering (for production, use geohash range queries).
-    """
-    db = get_firestore_client()
+    valid_statuses = {"AVAILABLE", "BUSY", "OFFLINE"}
+    if status_update.availability_status not in valid_statuses:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid availability_status. Must be one of: {', '.join(valid_statuses)}"
+        )
+        
+    doc_ref = db.collection("volunteers").document(volunteer_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Volunteer not found")
+        
+    doc_ref.update({"availability_status": status_update.availability_status})
+    
+    updated_doc = doc_ref.get()
+    data = updated_doc.to_dict()
+    data["id"] = updated_doc.id
+    return data
 
-    available = (
-        db.collection("volunteers")
-        .where("availability_status", "==", "AVAILABLE")
-        .stream()
-    )
-
-    origin = (lat, lng)
-    nearby = []
-    for doc in available:
+@router.get("/{volunteer_id}/assignments")
+async def get_volunteer_assignments(
+    volunteer_id: str = Path(...)
+):
+    assignments_ref = db.collection("assignments")
+    query = assignments_ref.where(filter=FieldFilter("volunteer_id", "==", volunteer_id))
+    query = query.order_by("assigned_at", direction=FirestoreQuery.DESCENDING)
+    query = query.limit(50)
+    
+    docs = query.stream()
+    assignments = []
+    for doc in docs:
         data = doc.to_dict()
-        if not data:
-            continue
-        vol_loc = (data.get("current_lat", 0), data.get("current_lng", 0))
-        dist = geodesic(origin, vol_loc).km
-        if dist <= radius_km:
-            nearby.append((dist, Volunteer(**data)))
-
-    # Sort by distance, closest first
-    nearby.sort(key=lambda x: x[0])
-    return [vol for _, vol in nearby[:limit]]
+        data["id"] = doc.id
+        assignments.append(data)
+        
+    return assignments
