@@ -8,6 +8,7 @@ from google.cloud import pubsub_v1
 
 # Import db from backend.firebase_init
 from backend.firebase_init import db
+from agents.pipeline import run_pipeline
 
 router = APIRouter(tags=["submissions"])
 logger = logging.getLogger(__name__)
@@ -87,3 +88,12 @@ async def get_submission_status(submission_id: str):
         "extracted_text": data.get("extracted_text"),
         "created_at": data.get("created_at")
     }
+
+@router.post("/{submission_id}/process")
+async def process_submission_manual(submission_id: str, org_id: str = "org-001"):
+    import traceback
+    try:
+        result = await run_pipeline(submission_id, org_id)
+        return result
+    except Exception as e:
+        return {"error_type": type(e).__name__, "error_msg": str(e), "traceback": traceback.format_exc()}
