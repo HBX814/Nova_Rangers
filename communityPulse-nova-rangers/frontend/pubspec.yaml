@@ -1,10 +1,10 @@
-name: communitypulse_flutter
+name: communitypulse
 description: CommunityPulse — Volunteer coordination platform for social-impact NGOs in Madhya Pradesh
 publish_to: "none"
 version: 0.1.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -14,17 +14,19 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
-  cached_network_image: ^3.4.1
+  cached_network_image: ^3.3.1
   shimmer: ^3.0.0
+  flutter_animate: ^4.5.0
 
   # State management
-  flutter_riverpod: ^2.6.1
+  flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.6.1
 
   # Routing
-  go_router: ^14.6.1
+  go_router: ^14.2.0
 
   # Networking
+  http: ^1.2.0
   dio: ^5.7.0
   retrofit: ^4.4.1
 
@@ -34,10 +36,10 @@ dependencies:
   geocoding: ^3.0.0
 
   # Firebase
-  firebase_core: ^3.8.0
-  firebase_auth: ^5.3.3
-  firebase_messaging: ^15.1.5
-  cloud_firestore: ^5.5.0
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  firebase_messaging: ^15.1.3
+  cloud_firestore: ^5.4.1
 
   # Local storage
   shared_preferences: ^2.3.3
@@ -49,6 +51,7 @@ dependencies:
   image_picker: ^1.1.2
   permission_handler: ^11.3.1
   connectivity_plus: ^6.1.0
+  flutter_local_notifications: ^17.2.2
 
 dev_dependencies:
   flutter_test:

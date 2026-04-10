@@ -1,174 +1,146 @@
-/// CommunityPulse API Service
-///
-/// Centralised HTTP client for communicating with the FastAPI backend.
-/// Uses Dio for request/response handling with interceptors for auth tokens.
-///
-/// Configuration is read from environment variables at build time:
-///   --dart-define=API_BASE_URL=https://your-cloud-run-url.run.app
+import 'dart:convert';
+import 'dart:io';
 
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
 
+import '../config.dart';
+
+/// Centralised HTTP client for the CommunityPulse FastAPI backend.
+///
+/// All methods use the [http] package and read [AppConfig.baseUrl] for the
+/// base URL.  Use the singleton [ApiService.instance] everywhere — never
+/// construct a new instance.
 class ApiService {
-  static final ApiService _instance = ApiService._internal();
-  factory ApiService() => _instance;
+  ApiService._();
 
-  late final Dio _dio;
+  /// Singleton instance.
+  static final ApiService instance = ApiService._();
 
-  ApiService._internal() {
-    // TODO: Replace with your Cloud Run URL or use --dart-define
-    const baseUrl = String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'http://localhost:8080',
-    );
+  // ── Internal helpers ──────────────────────────────────────────────────────
 
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: '$baseUrl/api/v1',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 30),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    // Auth interceptor — attaches Firebase ID token
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          // TODO: Get Firebase Auth token
-          // final user = FirebaseAuth.instance.currentUser;
-          // if (user != null) {
-          //   final token = await user.getIdToken();
-          //   options.headers['Authorization'] = 'Bearer $token';
-          // }
-          return handler.next(options);
-        },
-        onError: (error, handler) {
-          // TODO: Handle 401 → redirect to login
-          return handler.next(error);
-        },
-      ),
-    );
+  /// Build a [Uri] from a relative [path] and optional nullable query params.
+  /// Null-valued params are automatically dropped.
+  Uri _uri(String path, [Map<String, String?>? rawParams]) {
+    final params = <String, String>{};
+    rawParams?.forEach((k, v) {
+      if (v != null) params[k] = v;
+    });
+    return Uri.parse('${AppConfig.baseUrl}$path')
+        .replace(queryParameters: params.isEmpty ? null : params);
   }
 
-  Dio get client => _dio;
-
-  // ---------------------------------------------------------------------------
-  // Needs
-  // ---------------------------------------------------------------------------
-
-  Future<List<dynamic>> getNeeds({String? status, String? category, int limit = 100}) async {
-    final params = <String, dynamic>{'limit': limit};
-    if (status != null) params['status_filter'] = status;
-    if (category != null) params['category'] = category;
-
-    final response = await _dio.get('/needs', queryParameters: params);
-    return response.data as List<dynamic>;
+  Map<String, dynamic> _decodeMap(http.Response res, String method) {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return json.decode(res.body) as Map<String, dynamic>;
+    }
+    throw Exception('$method failed [${res.statusCode}]: ${res.body}');
   }
 
-  Future<Map<String, dynamic>> getNeed(String needId) async {
-    final response = await _dio.get('/needs/$needId');
-    return response.data as Map<String, dynamic>;
+  List<Map<String, dynamic>> _decodeList(http.Response res, String method) {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final data = json.decode(res.body) as List<dynamic>;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('$method failed [${res.statusCode}]: ${res.body}');
   }
 
-  Future<Map<String, dynamic>> createNeed(Map<String, dynamic> data) async {
-    final response = await _dio.post('/needs', data: data);
-    return response.data as Map<String, dynamic>;
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  /// GET /analytics/summary
+  Future<Map<String, dynamic>> fetchSummary() async {
+    try {
+      final res = await http.get(_uri('/analytics/summary'));
+      return _decodeMap(res, 'fetchSummary');
+    } on SocketException catch (e) {
+      throw Exception('fetchSummary: network error — $e');
+    }
   }
 
-  Future<List<dynamic>> getTopPriorityNeeds({int limit = 10}) async {
-    final response = await _dio.get('/needs/priority/top', queryParameters: {'limit': limit});
-    return response.data as List<dynamic>;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Volunteers
-  // ---------------------------------------------------------------------------
-
-  Future<List<dynamic>> getVolunteers({String? status, int limit = 100}) async {
-    final params = <String, dynamic>{'limit': limit};
-    if (status != null) params['status_filter'] = status;
-
-    final response = await _dio.get('/volunteers', queryParameters: params);
-    return response.data as List<dynamic>;
-  }
-
-  Future<Map<String, dynamic>> getVolunteer(String volunteerId) async {
-    final response = await _dio.get('/volunteers/$volunteerId');
-    return response.data as Map<String, dynamic>;
-  }
-
-  Future<Map<String, dynamic>> registerVolunteer(Map<String, dynamic> data) async {
-    final response = await _dio.post('/volunteers', data: data);
-    return response.data as Map<String, dynamic>;
-  }
-
-  Future<List<dynamic>> findNearbyVolunteers({
-    required double lat,
-    required double lng,
-    double radiusKm = 25.0,
+  /// GET /needs  (optional filters: category, status, min_urgency)
+  Future<List<Map<String, dynamic>>> fetchNeeds({
+    String? category,
+    String? status,
+    int? minUrgency,
   }) async {
-    final response = await _dio.get('/volunteers/nearby/', queryParameters: {
-      'lat': lat,
-      'lng': lng,
-      'radius_km': radiusKm,
-    });
-    return response.data as List<dynamic>;
+    try {
+      final res = await http.get(
+        _uri('/needs', {
+          'category': category,
+          'status': status,
+          'min_urgency': minUrgency?.toString(),
+        }),
+      );
+      return _decodeList(res, 'fetchNeeds');
+    } on SocketException catch (e) {
+      throw Exception('fetchNeeds: network error — $e');
+    }
   }
 
-  // ---------------------------------------------------------------------------
-  // Submissions
-  // ---------------------------------------------------------------------------
-
-  Future<Map<String, dynamic>> submitReport(Map<String, dynamic> data) async {
-    final response = await _dio.post('/submissions', data: data);
-    return response.data as Map<String, dynamic>;
+  /// GET /needs/heatmap
+  Future<List<Map<String, dynamic>>> fetchHeatmapNeeds() async {
+    try {
+      final res = await http.get(_uri('/needs/heatmap'));
+      return _decodeList(res, 'fetchHeatmapNeeds');
+    } on SocketException catch (e) {
+      throw Exception('fetchHeatmapNeeds: network error — $e');
+    }
   }
 
-  Future<List<dynamic>> getSubmissions({int limit = 50}) async {
-    final response = await _dio.get('/submissions', queryParameters: {'limit': limit});
-    return response.data as List<dynamic>;
+  /// GET /volunteers  (optional filters: status, skill)
+  Future<List<Map<String, dynamic>>> fetchVolunteers({
+    String? status,
+    String? skill,
+  }) async {
+    try {
+      final res = await http.get(
+        _uri('/volunteers', {
+          'status': status,
+          'skill': skill,
+        }),
+      );
+      return _decodeList(res, 'fetchVolunteers');
+    } on SocketException catch (e) {
+      throw Exception('fetchVolunteers: network error — $e');
+    }
   }
 
-  // ---------------------------------------------------------------------------
-  // Organizations
-  // ---------------------------------------------------------------------------
+  /// POST /submissions/upload  (multipart/form-data)
+  ///
+  /// Returns a [Map] containing at least `submission_id` and `status`.
+  Future<Map<String, dynamic>> uploadSubmission(
+    String filePath,
+    String orgId,
+    String submittedBy,
+  ) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        _uri('/submissions/upload'),
+      )
+        ..fields['org_id'] = orgId
+        ..fields['submitted_by'] = submittedBy
+        ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
-  Future<List<dynamic>> getOrganizations({int limit = 100}) async {
-    final response = await _dio.get('/organizations', queryParameters: {'limit': limit});
-    return response.data as List<dynamic>;
+      final streamed = await request.send();
+      final res = await http.Response.fromStream(streamed);
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return json.decode(res.body) as Map<String, dynamic>;
+      }
+      throw Exception(
+          'uploadSubmission failed [${res.statusCode}]: ${res.body}');
+    } on SocketException catch (e) {
+      throw Exception('uploadSubmission: network error — $e');
+    }
   }
 
-  // ---------------------------------------------------------------------------
-  // Analytics
-  // ---------------------------------------------------------------------------
-
-  Future<Map<String, dynamic>> getAnalyticsSummary() async {
-    final response = await _dio.get('/analytics/summary');
-    return response.data as Map<String, dynamic>;
-  }
-
-  Future<List<dynamic>> getTopVolunteers({int limit = 10}) async {
-    final response = await _dio.get('/analytics/top-volunteers', queryParameters: {'limit': limit});
-    return response.data as List<dynamic>;
-  }
-
-  Future<List<dynamic>> getDistrictHeatmap() async {
-    final response = await _dio.get('/analytics/district-heatmap');
-    return response.data as List<dynamic>;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Auth
-  // ---------------------------------------------------------------------------
-
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _dio.post('/auth/token', data: {
-      'email': email,
-      'password': password,
-    });
-    return response.data as Map<String, dynamic>;
+  /// GET /analytics/needs-by-category
+  Future<List<Map<String, dynamic>>> fetchAnalyticsByCategory() async {
+    try {
+      final res = await http.get(_uri('/analytics/needs-by-category'));
+      return _decodeList(res, 'fetchAnalyticsByCategory');
+    } on SocketException catch (e) {
+      throw Exception('fetchAnalyticsByCategory: network error — $e');
+    }
   }
 }
