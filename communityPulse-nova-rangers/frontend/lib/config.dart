@@ -4,7 +4,7 @@ class AppConfig {
   AppConfig._(); // prevent instantiation
 
   // ── API ──────────────────────────────────────────────────────────────────
-  static const String baseUrl = 'http://127.0.0.1:8000/api/v1';
+  static const String baseUrl = 'https://communitypulse-api-619376803975.asia-south1.run.app/api/v1';
 
   // ── App metadata ─────────────────────────────────────────────────────────
   static const String appName = 'CommunityPulse';

@@ -98,19 +98,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // ── Content ────────────────────────────────────────────────────────────────
 
   Widget _buildContent(BuildContext context, ColorScheme cs) {
+    // ── Map real API field names from GET /analytics/summary ────────────────
     final openNeeds =
-        (_summary['open_needs'] ?? _summary['openNeeds'] ?? '--').toString();
-    final volunteers = (_summary['available_volunteers'] ??
-            _summary['availableVolunteers'] ??
-            '--')
-        .toString();
-    final completed = (_summary['completed_assignments'] ??
-            _summary['completedAssignments'] ??
-            '--')
-        .toString();
-    final topCategory =
-        (_summary['top_category'] ?? _summary['topCategory'] ?? '--')
-            .toString();
+        (_summary['total_needs_open'] ?? '--').toString();
+    final volunteers =
+        (_summary['total_volunteers_available'] ?? '--').toString();
+    final completed =
+        (_summary['total_assignments_completed_this_week'] ?? '--').toString();
+    final rawAvgTime = _summary['avg_response_time_hours'];
+    final avgTime = rawAvgTime == null
+        ? '--'
+        : '${(rawAvgTime as num).toStringAsFixed(1)}h';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,21 +147,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               color: const Color(0xFF1565C0),
             ),
             SummaryCard(
-              title: 'Volunteers',
+              title: 'Volunteers Available',
               value: volunteers,
               icon: Icons.people_rounded,
               color: const Color(0xFF2E7D32),
             ),
             SummaryCard(
-              title: 'Completed',
+              title: 'Completed This Week',
               value: completed,
               icon: Icons.check_circle_rounded,
               color: const Color(0xFF00838F),
             ),
             SummaryCard(
-              title: 'Top Category',
-              value: topCategory,
-              icon: Icons.category_rounded,
+              title: 'Avg Response Time',
+              value: avgTime,
+              icon: Icons.timer_outlined,
               color: const Color(0xFF6A1B9A),
             ),
           ],

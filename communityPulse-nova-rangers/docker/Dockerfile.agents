@@ -5,11 +5,13 @@
 # pulls messages from Pub/Sub and processes them through the pipeline.
 # =============================================================================
 
-FROM python:3.12-slim AS base
+FROM python:3.12-slim-bookworm AS base
 
+# FIX: libgl1-mesa-glx not available in bookworm slim; use libgl1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-hin \
+    libgl1 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,6 +29,7 @@ COPY backend/uv.lock* backend/
 WORKDIR /app/backend
 RUN uv sync --frozen --no-dev 2>/dev/null || uv sync --no-dev
 
+# FIX: Return to /app before copying source so COPY targets are consistent
 WORKDIR /app
 
 # Copy source code
@@ -34,5 +37,5 @@ COPY agents/ agents/
 COPY backend/ backend/
 COPY .env.example .env.example
 
-# Run the agent pipeline
-CMD ["uv", "run", "python", "-m", "agents.pipeline"]
+# FIX: Run from /app so both `agents` and `backend` packages are on sys.path
+CMD ["uv", "run", "--directory", "backend", "python", "-m", "agents.pipeline"]

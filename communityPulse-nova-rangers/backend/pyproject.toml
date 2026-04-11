@@ -2,10 +2,11 @@
 name = "communitypulse-backend"
 version = "0.1.0"
 description = "CommunityPulse — FastAPI backend for volunteer coordination in Madhya Pradesh"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
+    "cachetools>=5.5.0",
     "pydantic>=2.10.0",
     "firebase-admin>=6.6.0",
     "google-cloud-firestore>=2.19.0",
@@ -34,10 +35,13 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "httpx>=0.28.0",
     "ruff>=0.8.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
