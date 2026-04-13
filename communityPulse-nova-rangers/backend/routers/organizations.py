@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/", response_model=Organization, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=Organization, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Organization, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_organization(body: OrganizationCreate):
     """Register a new NGO / organisation."""
     db = get_firestore_client()
@@ -41,7 +42,8 @@ async def create_organization(body: OrganizationCreate):
     return org
 
 
-@router.get("/", response_model=list[Organization])
+@router.get("", response_model=list[Organization])
+@router.get("/", response_model=list[Organization], include_in_schema=False)
 async def list_organizations(limit: int = 100):
     """List all organisations."""
     db = get_firestore_client()

@@ -23,9 +23,9 @@ def get_nearby_unresolved_count(lat: float, lng: float, db) -> int:
         if not data:
             continue
             
-        # Safely extract latitude and longitude
-        need_lat = data.get('latitude')
-        need_lng = data.get('longitude')
+        # Safely extract coordinates from either schema variant.
+        need_lat = data.get('lat', data.get('latitude'))
+        need_lng = data.get('lng', data.get('longitude'))
         
         # Check if coordinates are present
         if need_lat is not None and need_lng is not None:

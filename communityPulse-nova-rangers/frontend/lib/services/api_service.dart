@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../config.dart';
 
@@ -44,6 +45,16 @@ class ApiService {
     throw Exception('$method failed [${res.statusCode}]: ${res.body}');
   }
 
+  MediaType _mediaTypeForFileName(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.pdf')) return MediaType('application', 'pdf');
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return MediaType('image', 'jpeg');
+    }
+    return MediaType('application', 'octet-stream');
+  }
+
   // ── Public API ────────────────────────────────────────────────────────────
 
   /// GET /analytics/summary
@@ -51,7 +62,7 @@ class ApiService {
     try {
       final res = await http.get(_uri('/analytics/summary'));
       return _decodeMap(res, 'fetchSummary');
-    } on SocketException catch (e) {
+    } on http.ClientException catch (e) {
       throw Exception('fetchSummary: network error — $e');
     }
   }
@@ -71,7 +82,7 @@ class ApiService {
         }),
       );
       return _decodeList(res, 'fetchNeeds');
-    } on SocketException catch (e) {
+    } on http.ClientException catch (e) {
       throw Exception('fetchNeeds: network error — $e');
     }
   }
@@ -81,7 +92,7 @@ class ApiService {
     try {
       final res = await http.get(_uri('/needs/heatmap'));
       return _decodeList(res, 'fetchHeatmapNeeds');
-    } on SocketException catch (e) {
+    } on http.ClientException catch (e) {
       throw Exception('fetchHeatmapNeeds: network error — $e');
     }
   }
@@ -99,7 +110,7 @@ class ApiService {
         }),
       );
       return _decodeList(res, 'fetchVolunteers');
-    } on SocketException catch (e) {
+    } on http.ClientException catch (e) {
       throw Exception('fetchVolunteers: network error — $e');
     }
   }
@@ -108,18 +119,26 @@ class ApiService {
   ///
   /// Returns a [Map] containing at least `submission_id` and `status`.
   Future<Map<String, dynamic>> uploadSubmission(
-    String filePath,
+    XFile file,
     String orgId,
     String submittedBy,
   ) async {
     try {
+      final fileBytes = await file.readAsBytes();
       final request = http.MultipartRequest(
         'POST',
         _uri('/submissions/upload'),
       )
         ..fields['org_id'] = orgId
         ..fields['submitted_by'] = submittedBy
-        ..files.add(await http.MultipartFile.fromPath('file', filePath));
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            fileBytes,
+            filename: file.name,
+            contentType: _mediaTypeForFileName(file.name),
+          ),
+        );
 
       final streamed = await request.send();
       final res = await http.Response.fromStream(streamed);
@@ -129,7 +148,7 @@ class ApiService {
       }
       throw Exception(
           'uploadSubmission failed [${res.statusCode}]: ${res.body}');
-    } on SocketException catch (e) {
+    } on http.ClientException catch (e) {
       throw Exception('uploadSubmission: network error — $e');
     }
   }
@@ -139,7 +158,7 @@ class ApiService {
     try {
       final res = await http.get(_uri('/analytics/needs-by-category'));
       return _decodeList(res, 'fetchAnalyticsByCategory');
-    } on SocketException catch (e) {
+    } on http.ClientException catch (e) {
       throw Exception('fetchAnalyticsByCategory: network error — $e');
     }
   }

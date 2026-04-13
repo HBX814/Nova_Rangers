@@ -86,6 +86,9 @@ from backend.routers.submissions import router as submissions_router
 from backend.routers.needs import router as needs_router
 from backend.routers.volunteers import router as volunteers_router
 from backend.routers.analytics import router as analytics_router
+from backend.routers.assignments import router as assignments_router
+from backend.routers.auth import router as auth_router
+from backend.routers.organizations import router as organizations_router
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +112,7 @@ app = FastAPI(
     description="Data-driven volunteer coordination platform for social-impact NGOs in Madhya Pradesh",
     version="0.1.0",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 # ---------------------------------------------------------------------------
@@ -116,8 +120,8 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -129,6 +133,9 @@ app.include_router(submissions_router, prefix="/api/v1/submissions", tags=["Subm
 app.include_router(needs_router, prefix="/api/v1/needs", tags=["Needs"])
 app.include_router(volunteers_router, prefix="/api/v1/volunteers", tags=["Volunteers"])
 app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["Analytics"])
+app.include_router(assignments_router, prefix="/api/v1/assignments", tags=["Assignments"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(organizations_router, prefix="/api/v1/organizations", tags=["Organizations"])
 
 
 # ---------------------------------------------------------------------------

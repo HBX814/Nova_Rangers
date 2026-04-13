@@ -5,19 +5,25 @@ from typing import Dict, Any, List
 
 router = APIRouter()
 
-summary_cache = TTLCache(maxsize=1, ttl=60)
+summary_cache = TTLCache(maxsize=1, ttl=10)
 
 @router.get("/summary")
 @cached(cache=summary_cache)
 def get_summary() -> Dict[str, Any]:
-    open_needs_count = len(list(db.collection('needs').where('status', '==', 'OPEN').stream()))
+    open_needs = db.collection('needs').where('status', '==', 'OPEN').stream()
+    open_needs_count = sum(1 for _ in open_needs)
     available_volunteers_count = len(list(db.collection('volunteers').where('availability_status', '==', 'AVAILABLE').stream()))
     completed_assignments_count = len(list(db.collection('assignments').where('status', '==', 'COMPLETED').stream()))
     
     return {
+        # Canonical keys
         "open_needs": open_needs_count,
         "available_volunteers": available_volunteers_count,
         "completed_assignments": completed_assignments_count,
+        # Backward-compatible keys expected by current Flutter UI
+        "total_needs_open": open_needs_count,
+        "total_volunteers_available": available_volunteers_count,
+        "total_assignments_completed_this_week": completed_assignments_count,
         "top_category_this_week": "FLOOD",
         "avg_response_time_hours": 4.5
     }
@@ -47,8 +53,8 @@ def get_geographic() -> Dict[str, Any]:
         data = need.to_dict()
         if not data:
             continue
-        lat = data.get('lat')
-        lng = data.get('lng')
+        lat = data.get('lat', data.get('latitude'))
+        lng = data.get('lng', data.get('longitude'))
         
         if lat is not None and lng is not None:
             feature = {

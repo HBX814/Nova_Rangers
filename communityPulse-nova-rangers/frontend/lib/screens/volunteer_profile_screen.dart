@@ -77,11 +77,11 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
     setState(() => _isUpdatingStatus = true);
 
     try {
-      final newStatus = value ? 'AVAILABLE' : 'UNAVAILABLE';
+      final newStatus = value ? 'AVAILABLE' : 'OFFLINE';
       final res = await http.patch(
         Uri.parse('${AppConfig.baseUrl}/volunteers/$id/status'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'status': newStatus}),
+        body: jsonEncode({'availability_status': newStatus}),
       );
       if (!mounted) return;
       if (res.statusCode >= 200 && res.statusCode < 300) {

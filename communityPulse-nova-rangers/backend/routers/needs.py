@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Header
-from typing import Optional, List
+from typing import Optional
 from cachetools import TTLCache
-from firebase_admin import firestore
 from backend.firebase_init import db
 
 router = APIRouter(tags=["needs"])
@@ -9,26 +8,36 @@ router = APIRouter(tags=["needs"])
 # Cache for heatmap: maxsize=1, ttl=30 seconds
 heatmap_cache = TTLCache(maxsize=1, ttl=30)
 
-@router.get("/")
+@router.get("", summary="List needs")
+@router.get("/", include_in_schema=False)
 async def get_needs(
     category: Optional[str] = None,
     status: Optional[str] = None,
     min_urgency: Optional[int] = None,
     limit: int = Query(20, le=100)
 ):
-    query = db.collection("needs")
-
-    if category:
-        query = query.where("need_category", "==", category)
-    if status:
-        query = query.where("status", "==", status)
-    if min_urgency is not None:
-        query = query.where("urgency_score", ">=", min_urgency)
-
-    docs = query.stream()
+    # Keep filtering in memory to avoid Firestore composite-index failures
+    # from combined optional query parameters.
+    docs = db.collection("needs").stream()
     results = []
     for doc in docs:
         doc_data = doc.to_dict()
+        if not doc_data:
+            continue
+        if category and doc_data.get("need_category") != category:
+            continue
+        if status and doc_data.get("status") != status:
+            continue
+        urgency = doc_data.get("urgency_score")
+        if min_urgency is not None:
+            if urgency is None:
+                continue
+            try:
+                urgency_value = float(urgency)
+            except (TypeError, ValueError):
+                continue
+            if urgency_value < min_urgency:
+                continue
         doc_data['id'] = doc.id
         results.append(doc_data)
 
@@ -54,10 +63,16 @@ async def get_heatmap():
     results = []
     for doc in docs:
         data = doc.to_dict()
+        if not data:
+            continue
+        lat = data.get("lat", data.get("latitude"))
+        lng = data.get("lng", data.get("longitude"))
+        if lat is None or lng is None:
+            continue
         results.append({
-            "need_id": data.get("need_id", doc.id),
-            "lat": data.get("lat"),
-            "lng": data.get("lng"),
+            "need_id": doc.id,
+            "lat": lat,
+            "lng": lng,
             "need_category": data.get("need_category"),
             "urgency_score": data.get("urgency_score"),
             "affected_population": data.get("affected_population")

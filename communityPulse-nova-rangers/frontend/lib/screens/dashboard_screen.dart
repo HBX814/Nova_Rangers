@@ -36,25 +36,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _isLoading = true;
       _error = null;
     });
+
+    Map<String, dynamic>? summary;
+    List<Map<String, dynamic>> urgentNeeds = [];
+    String? summaryError;
+    String? urgentNeedsError;
+
     try {
-      final results = await Future.wait([
-        ApiService.instance.fetchSummary(),
-        ApiService.instance.fetchNeeds(status: 'OPEN', minUrgency: 5),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _summary = results[0] as Map<String, dynamic>;
-        _urgentNeeds =
-            (results[1] as List<Map<String, dynamic>>).take(5).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      summary = await ApiService.instance.fetchSummary();
+    } catch (e, st) {
+      summaryError = e.toString();
+      print('Dashboard _loadData fetchSummary error: $e\n$st');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+
+    try {
+      urgentNeeds = (await ApiService.instance
+              .fetchNeeds(status: 'OPEN', minUrgency: 5))
+          .take(5)
+          .toList();
+    } catch (e, st) {
+      urgentNeedsError = e.toString();
+      urgentNeeds = [];
+      print('Dashboard _loadData fetchNeeds error: $e\n$st');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _summary = summary ?? {};
+      _urgentNeeds = urgentNeeds;
+      _error = summaryError ?? urgentNeedsError;
+      _isLoading = false;
+    });
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────

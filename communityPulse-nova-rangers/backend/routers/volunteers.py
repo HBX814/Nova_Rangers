@@ -10,7 +10,8 @@ router = APIRouter(tags=["volunteers"])
 class StatusUpdate(BaseModel):
     availability_status: str
 
-@router.get("/")
+@router.get("", summary="List volunteers")
+@router.get("/", include_in_schema=False)
 async def list_volunteers(
     status: Optional[str] = Query(None, description="Filter by availability_status"),
     skill: Optional[str] = Query(None, description="Check if value is in skills array"),
@@ -27,10 +28,28 @@ async def list_volunteers(
     query = query.limit(limit)
     docs = query.stream()
     
+    volunteer_docs = list(docs)
+    volunteer_ids = [doc.id for doc in volunteer_docs]
+
+    assignments_by_volunteer = {volunteer_id: [] for volunteer_id in volunteer_ids}
+    if volunteer_ids:
+        assignment_docs = db.collection("assignments").stream()
+        for assignment_doc in assignment_docs:
+            assignment_data = assignment_doc.to_dict() or {}
+            volunteer_id = assignment_data.get("volunteer_id")
+            if volunteer_id in assignments_by_volunteer:
+                assignment_with_id = dict(assignment_data)
+                assignment_with_id["id"] = assignment_doc.id
+                assignments_by_volunteer[volunteer_id].append(assignment_with_id)
+
+        for assignment_list in assignments_by_volunteer.values():
+            assignment_list.sort(key=lambda x: str(x.get("assigned_at", "")), reverse=True)
+
     volunteers = []
-    for doc in docs:
+    for doc in volunteer_docs:
         data = doc.to_dict()
         data["id"] = doc.id
+        data["assignments"] = assignments_by_volunteer.get(doc.id, [])
         volunteers.append(data)
         
     return volunteers

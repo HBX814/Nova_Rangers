@@ -1,6 +1,7 @@
 import os
 import json
 import math
+import re
 import uuid
 from datetime import datetime
 
@@ -14,12 +15,89 @@ from backend.services.vector_store import add_need, search_similar
 from backend.services.embedding_service import embed_text
 from backend.services.priority_ranker import compute_priority_score, get_nearby_unresolved_count
 
+class SubmissionNotFoundError(ValueError):
+    """Raised when submission_queue document is missing."""
+
+
+class SubmissionOrgMismatchError(PermissionError):
+    """Raised when request org_id does not match submission org_id."""
+
+
+class PipelineInvariantError(RuntimeError):
+    """Raised when pipeline cannot produce required linked entities."""
+
+
+DISTRICT_COORDS = {
+    "harda": ("Harda, Madhya Pradesh", 22.33, 77.08),
+    "dewas": ("Dewas, Madhya Pradesh", 22.96, 76.05),
+    "barwani": ("Barwani, Madhya Pradesh", 22.03, 74.90),
+    "betul": ("Betul, Madhya Pradesh", 21.90, 77.90),
+    "mandla": ("Mandla, Madhya Pradesh", 22.60, 80.37),
+    "bhopal": ("Bhopal, Madhya Pradesh", 23.26, 77.41),
+    "indore": ("Indore, Madhya Pradesh", 22.72, 75.86),
+    "jabalpur": ("Jabalpur, Madhya Pradesh", 23.18, 79.99),
+    "gwalior": ("Gwalior, Madhya Pradesh", 26.22, 78.18),
+}
+
+CATEGORY_KEYWORDS = {
+    "FLOOD": ["flood", "flash flood", "barish", "water logging", "submerged", "overflow"],
+    "DROUGHT": ["drought", "water crisis", "dry", "no rain"],
+    "MEDICAL": ["medical", "hospital", "ambulance", "health", "dengue", "fever", "injury"],
+    "SHELTER": ["shelter", "temporary shelter", "camp", "housing", "relief camp"],
+    "EDUCATION": ["school", "students", "education", "classroom", "teacher"],
+    "FOOD": ["food", "ration", "meal", "packets", "nutrition", "dry food"],
+    "INFRASTRUCTURE": ["road", "bridge", "electricity", "power", "infrastructure"],
+    "WATER": ["drinking water", "clean water", "water supply", "water tanker"],
+}
+
 def read_submission_text(submission_id: str) -> str:
     """Reads submission_queue Firestore document and returns extracted_text."""
     doc = db.collection('submission_queue').document(submission_id).get()
     if doc.exists:
         return doc.to_dict().get('extracted_text', '')
     return ""
+
+def _infer_location(text: str) -> tuple[str, float, float]:
+    lower = text.lower()
+    for district, value in DISTRICT_COORDS.items():
+        if district in lower:
+            return value
+    return ("Madhya Pradesh", 23.26, 77.41)
+
+def _infer_category(text: str) -> str:
+    lower = text.lower()
+    for category, keywords in CATEGORY_KEYWORDS.items():
+        if any(keyword in lower for keyword in keywords):
+            return category
+    return "INFRASTRUCTURE"
+
+def _infer_affected_population(text: str) -> int:
+    numbers = [int(v) for v in re.findall(r"\b\d{2,6}\b", text)]
+    if not numbers:
+        return 100
+    return max(50, min(max(numbers), 100000))
+
+def _create_need_from_submission_text(submission_id: str, org_id: str, extracted_text: str) -> str:
+    location, lat, lng = _infer_location(extracted_text)
+    category = _infer_category(extracted_text)
+    affected_population = _infer_affected_population(extracted_text)
+    title = f"{category.title()} emergency in {location.split(',')[0]}"
+    title = title[:60]
+    description = extracted_text.strip()
+    if len(description) > 500:
+        description = description[:500].rstrip() + "..."
+    return write_need_record(
+        submission_id=submission_id,
+        need_category=category,
+        title=title,
+        description=description,
+        urgency_score=8,
+        affected_population=affected_population,
+        primary_location_text=location,
+        lat=lat,
+        lng=lng,
+        org_id=org_id,
+    )
 
 def write_need_record(submission_id: str, need_category: str, title: str, 
                       description: str, urgency_score: int, affected_population: int, 
@@ -35,6 +113,9 @@ def write_need_record(submission_id: str, need_category: str, title: str,
         'urgency_score': urgency_score,
         'affected_population': affected_population,
         'primary_location_text': primary_location_text,
+        'lat': lat,
+        'lng': lng,
+        # Backward compatibility for services that still read legacy keys.
         'latitude': lat,
         'longitude': lng,
         'org_id': org_id,
@@ -90,8 +171,8 @@ def rank_need(need_id: str) -> float:
     doc = ref.get()
     if doc.exists:
         data = doc.to_dict()
-        lat = data.get('latitude', 0.0)
-        lng = data.get('longitude', 0.0)
+        lat = data.get('lat', data.get('latitude', 0.0))
+        lng = data.get('lng', data.get('longitude', 0.0))
         urgency = data.get('urgency_score', 0)
         reports = data.get('report_count', 1)
         population = data.get('affected_population', 0)
@@ -104,27 +185,31 @@ def rank_need(need_id: str) -> float:
     return 0.0
 
 def query_available_volunteers(lat: float, lng: float, need_category: str) -> list:
-    """Queries for AVAILABLE volunteers within roughly 0.5 degrees and returns top 5."""
+    """Queries AVAILABLE volunteers near the need; falls back to any available volunteer."""
     vol_ref = db.collection('volunteers').where('availability_status', '==', 'AVAILABLE').stream()
-    candidates = []
+    nearby_candidates = []
+    all_available_candidates = []
     
     for v in vol_ref:
         data = v.to_dict()
         v_lat = data.get('current_lat')
         v_lng = data.get('current_lng')
+        candidate = {
+            'volunteer_id': v.id,
+            'name': data.get('name', ''),
+            'skills': data.get('skills', []),
+            'performance_score': data.get('performance_score', 0.0),
+            'current_lat': v_lat,
+            'current_lng': v_lng
+        }
+        all_available_candidates.append(candidate)
         
         if v_lat is not None and v_lng is not None:
-            if abs(v_lat - lat) <= 0.5 and abs(v_lng - lng) <= 0.5:
-                candidates.append({
-                    'volunteer_id': v.id,
-                    'name': data.get('name', ''),
-                    'skills': data.get('skills', []),
-                    'performance_score': data.get('performance_score', 0.0),
-                    'current_lat': v_lat,
-                    'current_lng': v_lng
-                })
-                
-    # Sort descending by score
+            # ~2.5 degrees keeps matching practical across districts.
+            if abs(v_lat - lat) <= 2.5 and abs(v_lng - lng) <= 2.5:
+                nearby_candidates.append(candidate)
+
+    candidates = nearby_candidates if nearby_candidates else all_available_candidates
     candidates.sort(key=lambda x: x.get('performance_score', 0.0), reverse=True)
     return candidates[:5]
 
@@ -148,11 +233,58 @@ def create_assignment(need_id: str, volunteer_id: str) -> str:
     
     return assignment_id
 
+def _get_existing_active_assignment_id(need_id: str) -> str | None:
+    assignments = db.collection('assignments').where('need_id', '==', need_id).stream()
+    for assignment in assignments:
+        data = assignment.to_dict() or {}
+        status = str(data.get('status', '')).upper()
+        if status in {"PENDING", "ACCEPTED"}:
+            return assignment.id
+    return None
+
+def _skills_for_category(need_category: str) -> set[str]:
+    mapping = {
+        "FLOOD": {"flood_rescue", "logistics"},
+        "MEDICAL": {"medical", "first_aid"},
+        "FOOD": {"food_distribution", "logistics"},
+        "DROUGHT": {"water_purification", "logistics"},
+        "EDUCATION": {"teaching"},
+        "SHELTER": {"construction"},
+    }
+    return mapping.get((need_category or "").upper(), set())
+
+def _pick_best_candidate(candidates: list, need_category: str) -> dict | None:
+    if not candidates:
+        return None
+
+    required_skills = _skills_for_category(need_category)
+    best_match = None
+    best_fallback = None
+
+    for candidate in candidates:
+        skills = {
+            str(skill).strip().lower()
+            for skill in (candidate.get("skills") or [])
+            if str(skill).strip()
+        }
+        if required_skills:
+            has_skill_match = bool(skills.intersection(required_skills))
+            if has_skill_match:
+                if best_match is None or candidate.get("performance_score", 0.0) > best_match.get("performance_score", 0.0):
+                    best_match = candidate
+            elif best_fallback is None or candidate.get("performance_score", 0.0) > best_fallback.get("performance_score", 0.0):
+                best_fallback = candidate
+        else:
+            if best_fallback is None or candidate.get("performance_score", 0.0) > best_fallback.get("performance_score", 0.0):
+                best_fallback = candidate
+
+    return best_match or best_fallback
+
 classifier_agent = LlmAgent(
     name="NeedsClassifier",
     model="gemini-2.5-flash",
     tools=[read_submission_text, write_need_record],
-    instruction="You are a needs classification agent for CommunityPulse in Madhya Pradesh India. Given a submission_id, read the extracted text and classify the community need. Extract: need_category (one of FLOOD DROUGHT MEDICAL SHELTER EDUCATION FOOD INFRASTRUCTURE WATER), title (max 60 chars English), description (2-3 sentences), urgency_score (1-10), affected_population (estimate from text), primary_location_text (most specific location mentioned), lat and lng (estimate coordinates for the MP location mentioned, MP is 21-26N 74-82E), org_id (pass through from context). Call write_need_record with all extracted fields and return the new need_id."
+    instruction="You are a needs classification agent for CommunityPulse in Madhya Pradesh India. Given a submission_id, read the extracted text and classify the community need. Extract: need_category (one of FLOOD DROUGHT MEDICAL SHELTER EDUCATION FOOD INFRASTRUCTURE WATER), title (max 60 chars English), description (2-3 sentences), urgency_score (1-10), affected_population (estimate from text), primary_location_text (most specific location mentioned), lat and lng (estimate coordinates for the MP location mentioned, MP is 21-26N 74-82E), org_id (pass through from context). Call write_need_record with all extracted fields and return the new need_id. IMPORTANT: You must always provide lat and lng coordinates. Madhya Pradesh coordinates range from 21.0 to 26.8 latitude and 74.0 to 82.8 longitude. If the location is Harda district use lat 22.33 lng 77.08. If Dewas use lat 22.96 lng 76.05. If Barwani use lat 22.03 lng 74.90. If Betul use lat 21.90 lng 77.90. If Mandla use lat 22.60 lng 80.37. If Bhopal use lat 23.26 lng 77.41. If Indore use lat 22.72 lng 75.86. If Jabalpur use lat 23.18 lng 79.99. If Gwalior use lat 26.22 lng 78.18. Never return null for lat or lng — always estimate based on the MP district mentioned."
 )
 
 dedup_agent = LlmAgent(
@@ -201,46 +333,156 @@ async def run_single_agent(agent, user_id: str, session_id: str, input_str: str)
                 pass
     return "\n".join(responses)
 
-async def run_pipeline(submission_id: str, org_id: str) -> dict:
+async def run_pipeline(submission_id: str, org_id: str | None) -> dict:
     session_id = f"sess_{uuid.uuid4().hex[:8]}"
-    
-    classifier_input = f"Process this submission. submission_id: {submission_id} org_id: {org_id} Read the extracted_text from Firestore submission_queue collection for this submission_id and classify the need."
-    classifier_result = await run_single_agent(classifier_agent, org_id, session_id, classifier_input)
-    
-    needs_ref = db.collection('needs').order_by('submitted_at', direction='DESCENDING').limit(1).stream()
-    need_id = None
-    lat = 0.0
-    lng = 0.0
-    need_category = ""
-    title = ""
-    description = ""
-    
-    for need in needs_ref:
-        need_id = need.id
-        data = need.to_dict()
-        lat = data.get('latitude', 0.0)
-        lng = data.get('longitude', 0.0)
-        need_category = data.get('need_category', '')
-        title = data.get('title', '')
-        description = data.get('description', '')
-        break
-        
-    if not need_id:
-        return {"submission_id": submission_id, "status": "failed", "error": "Need not found"}
+    submission_ref = db.collection('submission_queue').document(submission_id)
+    submission_doc = submission_ref.get()
+    if not submission_doc.exists:
+        raise SubmissionNotFoundError(f"Submission not found: {submission_id}")
 
-    dedup_input = f"Check for duplicates. need_id: {need_id} title: {title} description: {description}"
-    await run_single_agent(dedup_agent, org_id, session_id, dedup_input)
-    
-    ranker_input = f"Rank this need. need_id: {need_id}"
-    await run_single_agent(ranker_agent, org_id, session_id, ranker_input)
-    
-    matcher_input = f"Match a volunteer. need_id: {need_id} lat: {lat} lng: {lng} need_category: {need_category}"
-    matcher_result = await run_single_agent(matcher_agent, org_id, session_id, matcher_input)
-    
-    return {
-        "submission_id": submission_id,
-        "status": "completed",
-        "need_id": need_id,
-        "classifier_result": classifier_result,
-        "matcher_result": matcher_result
-    }
+    submission_data = submission_doc.to_dict() or {}
+    stored_org_id = str(submission_data.get("org_id", "")).strip()
+    requested_org_id = str(org_id).strip() if org_id is not None else ""
+    if not stored_org_id:
+        raise PipelineInvariantError(f"Submission {submission_id} is missing org_id.")
+    if requested_org_id and requested_org_id != stored_org_id:
+        raise SubmissionOrgMismatchError(
+            f"org_id mismatch for submission {submission_id}: requested {requested_org_id}, actual {stored_org_id}"
+        )
+    org_id = stored_org_id
+
+    submission_ref.update({
+        "status": "PROCESSING",
+        "processed": False,
+        "processing_started_at": datetime.utcnow().isoformat(),
+    })
+
+    try:
+        classifier_input = f"Process this submission. submission_id: {submission_id} org_id: {org_id} Read the extracted_text from Firestore submission_queue collection for this submission_id and classify the need."
+        classifier_result = await run_single_agent(classifier_agent, org_id, session_id, classifier_input)
+
+        needs_ref = db.collection('needs').where('submission_id', '==', submission_id).stream()
+        need_id = None
+        lat = 0.0
+        lng = 0.0
+        need_category = ""
+        title = ""
+        description = ""
+        latest_submitted_at = ""
+
+        for need in needs_ref:
+            data = need.to_dict()
+            if not data:
+                continue
+            if str(data.get("org_id", "")).strip() != org_id:
+                continue
+
+            submitted_at = str(data.get('submitted_at', ''))
+            if need_id is None or submitted_at >= latest_submitted_at:
+                need_id = need.id
+                latest_submitted_at = submitted_at
+                lat = data.get('lat', data.get('latitude', 0.0))
+                lng = data.get('lng', data.get('longitude', 0.0))
+                need_category = data.get('need_category', '')
+                title = data.get('title', '')
+                description = data.get('description', '')
+
+        # Some model replies include "need_<id>" in plain text; use it as a fallback.
+        if not need_id:
+            match = re.search(r"\b(need_[a-zA-Z0-9]+)\b", classifier_result or "")
+            if match:
+                candidate_need_id = match.group(1)
+                candidate_doc = db.collection('needs').document(candidate_need_id).get()
+                if candidate_doc.exists:
+                    data = candidate_doc.to_dict() or {}
+                    if data.get('submission_id') == submission_id and str(data.get("org_id", "")).strip() == org_id:
+                        need_id = candidate_need_id
+                        lat = data.get('lat', data.get('latitude', 0.0))
+                        lng = data.get('lng', data.get('longitude', 0.0))
+                        need_category = data.get('need_category', '')
+                        title = data.get('title', '')
+                        description = data.get('description', '')
+
+        # Deterministic fallback: if classifier path produced no linked need, create one
+        # from extracted_text so the pipeline can continue.
+        if not need_id:
+            extracted_text = (submission_data or {}).get('extracted_text', '')
+            if isinstance(extracted_text, str) and extracted_text.strip():
+                generated_need_id = _create_need_from_submission_text(
+                    submission_id=submission_id,
+                    org_id=org_id,
+                    extracted_text=extracted_text,
+                )
+                generated_doc = db.collection('needs').document(generated_need_id).get()
+                if generated_doc.exists:
+                    data = generated_doc.to_dict() or {}
+                    need_id = generated_need_id
+                    lat = data.get('lat', data.get('latitude', 0.0))
+                    lng = data.get('lng', data.get('longitude', 0.0))
+                    need_category = data.get('need_category', '')
+                    title = data.get('title', '')
+                    description = data.get('description', '')
+
+        if not need_id:
+            raise PipelineInvariantError(
+                "Need not found for this submission_id. Classifier did not create a linked need record."
+            )
+
+        dedup_input = f"Check for duplicates. need_id: {need_id} title: {title} description: {description}"
+        await run_single_agent(dedup_agent, org_id, session_id, dedup_input)
+
+        ranker_input = f"Rank this need. need_id: {need_id}"
+        await run_single_agent(ranker_agent, org_id, session_id, ranker_input)
+
+        matcher_input = f"Match a volunteer. need_id: {need_id} lat: {lat} lng: {lng} need_category: {need_category}"
+        matcher_result = await run_single_agent(matcher_agent, org_id, session_id, matcher_input)
+        assignment_id = None
+
+        assignment_match = re.search(r"\b(assgn_[a-zA-Z0-9]+)\b", matcher_result or "")
+        if assignment_match:
+            assignment_id = assignment_match.group(1)
+        else:
+            assignment_id = _get_existing_active_assignment_id(need_id)
+        if not assignment_id:
+            candidates = query_available_volunteers(lat, lng, need_category)
+            selected_candidate = _pick_best_candidate(candidates, need_category)
+            if selected_candidate:
+                assignment_id = create_assignment(need_id, selected_candidate["volunteer_id"])
+                matcher_result = (
+                    (matcher_result or "").strip() + f"\nfallback_assignment_created:{assignment_id}"
+                ).strip()
+            else:
+                matcher_result = (
+                    (matcher_result or "").strip() + "\nno_available_volunteers"
+                ).strip()
+        elif not (matcher_result or "").strip():
+            matcher_result = "matcher_no_text_output_used_existing_assignment"
+
+        if not (classifier_result or "").strip():
+            classifier_result = "classifier_no_text_output_used_firestore_need_record"
+
+        submission_ref.update({
+            "status": "COMPLETED",
+            "processed": True,
+            "processed_at": datetime.utcnow().isoformat(),
+            "need_id": need_id,
+            "assignment_id": assignment_id,
+            "processing_error": None,
+        })
+
+        return {
+            "submission_id": submission_id,
+            "status": "completed",
+            "need_id": need_id,
+            "assignment_id": assignment_id,
+            "classifier_result": classifier_result,
+            "matcher_result": matcher_result
+        }
+    except Exception as exc:
+        submission_ref.update({
+            "status": "FAILED",
+            "processed": False,
+            "processed_at": datetime.utcnow().isoformat(),
+            "processing_error": str(exc),
+        })
+        raise

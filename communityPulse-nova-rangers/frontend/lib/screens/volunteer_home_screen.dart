@@ -27,6 +27,11 @@ class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
   List<Map<String, dynamic>> _volunteers = [];
   Map<String, dynamic>? _activeAssignment;
 
+  bool _isActiveAssignment(Map<String, dynamic> assignment) {
+    final status = (assignment['status'] ?? '').toString().toUpperCase();
+    return status == 'PENDING' || status == 'ACCEPTED' || status.isEmpty;
+  }
+
   // ── demo volunteer (first available) ──────────────────────────────────────
   Map<String, dynamic>? get _volunteer =>
       _volunteers.isNotEmpty ? _volunteers.first : null;
@@ -45,18 +50,44 @@ class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
       _error = null;
     });
     try {
-      final volunteers =
-          await ApiService.instance.fetchVolunteers(status: 'AVAILABLE');
+      final volunteers = await ApiService.instance.fetchVolunteers();
       if (!mounted) return;
       setState(() {
         _volunteers = volunteers;
-        // Try to pick an assignment off the first volunteer
-        final v = volunteers.isNotEmpty ? volunteers.first : null;
-        final assignments =
-            (v?['assignments'] ?? v?['active_assignments']) as List?;
-        _activeAssignment = (assignments != null && assignments.isNotEmpty)
-            ? Map<String, dynamic>.from(assignments.first as Map)
-            : null;
+        Map<String, dynamic>? selectedVolunteer;
+        Map<String, dynamic>? selectedAssignment;
+
+        for (final volunteer in volunteers) {
+          final assignments =
+              (volunteer['assignments'] ?? volunteer['active_assignments'])
+                  as List?;
+          if (assignments != null && assignments.isNotEmpty) {
+            final parsedAssignments = assignments
+                .whereType<Map>()
+                .map((a) => Map<String, dynamic>.from(a))
+                .toList();
+            final activeAssignment = parsedAssignments.cast<Map<String, dynamic>?>().firstWhere(
+                  (a) => a != null && _isActiveAssignment(a),
+                  orElse: () => null,
+                );
+            if (activeAssignment == null) {
+              continue;
+            }
+            selectedVolunteer = volunteer;
+            selectedAssignment = activeAssignment;
+            break;
+          }
+        }
+
+        selectedVolunteer ??= volunteers.isNotEmpty ? volunteers.first : null;
+        _activeAssignment = selectedAssignment;
+
+        if (selectedVolunteer != null) {
+          _volunteers = [
+            selectedVolunteer,
+            ...volunteers.where((v) => v['id'] != selectedVolunteer!['id']),
+          ];
+        }
         _isLoading = false;
       });
     } catch (e) {

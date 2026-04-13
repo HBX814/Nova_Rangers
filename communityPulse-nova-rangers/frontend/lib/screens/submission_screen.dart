@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart' show XFile;
 import 'package:shimmer/shimmer.dart';
 
 import '../services/api_service.dart';
@@ -10,11 +9,11 @@ import '../services/api_service.dart';
 // ── Organisation list (replace with a live /organisations fetch if available) ─
 
 const _kOrganisations = [
-  _Org(id: 'org_001', name: 'Madhya Pradesh Relief Fund'),
-  _Org(id: 'org_002', name: 'Jan Seva Foundation'),
-  _Org(id: 'org_003', name: 'Bhopal Aid Society'),
-  _Org(id: 'org_004', name: 'Narmada Sewa Samiti'),
-  _Org(id: 'org_005', name: 'Rural Health Initiative'),
+  _Org(id: 'org-001', name: 'Madhya Pradesh Relief Fund'),
+  _Org(id: 'org-002', name: 'Jan Seva Foundation'),
+  _Org(id: 'org-003', name: 'Bhopal Aid Society'),
+  _Org(id: 'org-004', name: 'Narmada Sewa Samiti'),
+  _Org(id: 'org-005', name: 'Rural Health Initiative'),
 ];
 
 class _Org {
@@ -56,14 +55,35 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
   // ── File picker ────────────────────────────────────────────────────────────
 
   Future<void> _pickFile() async {
-    final picker = ImagePicker();
-    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
+    );
+    final platformFile = result?.files.single;
+    final bytes = platformFile?.bytes;
+    if (platformFile == null || bytes == null) {
+      return;
+    }
+    final XFile? file = XFile.fromData(
+      bytes,
+      name: platformFile.name,
+      mimeType: _mimeTypeFromName(platformFile.name),
+    );
     if (file != null) {
       setState(() {
         _pickedFile = file;
         _uploadError = null;
       });
     }
+  }
+
+  String _mimeTypeFromName(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    return 'application/octet-stream';
   }
 
   // ── Upload ─────────────────────────────────────────────────────────────────
@@ -74,6 +94,13 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
       setState(() => _uploadError = 'Please select a file before uploading.');
       return;
     }
+    if (_selectedOrgId == null) {
+      setState(() => _uploadError = 'Please select an organisation.');
+      return;
+    }
+
+    final pickedFile = _pickedFile!;
+    final selectedOrgId = _selectedOrgId!;
 
     setState(() {
       _isUploading = true;
@@ -82,8 +109,8 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
 
     try {
       final result = await ApiService.instance.uploadSubmission(
-        _pickedFile!.path,
-        _selectedOrgId!,
+        pickedFile,
+        selectedOrgId,
         _submittedByController.text.trim(),
       );
 
@@ -333,8 +360,8 @@ class _FilePicker extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               hasFile
-                  ? File(file!.path).uri.pathSegments.last
-                  : 'Tap to select a file (JSON / image)',
+                  ? file!.name
+                  : 'Tap to select a file (PDF / JPEG / PNG)',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: hasFile ? FontWeight.w600 : FontWeight.normal,
