@@ -171,16 +171,38 @@ class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A1628),
       appBar: AppBar(
-        title: const Text('My Tasks'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A1628), Color(0xFF1565C0)],
+            ),
+          ),
+        ),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Color(0xFF90CAF9)],
+          ).createShader(bounds),
+          child: const Text(
+            'My Tasks',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_outline),
+            icon: const Icon(Icons.person_outline, color: Colors.white),
             tooltip: 'My Profile',
             onPressed: () => context.go('/volunteer/profile'),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             tooltip: 'Refresh',
             onPressed: _loadData,
           ),
@@ -218,10 +240,10 @@ class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
         // ── Assignment section ─────────────────────────────────────────
         Text(
           'Current Assignment',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
         ),
         const SizedBox(height: 10),
 
@@ -323,41 +345,48 @@ class _GreetingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: cs.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hello, $name 👋',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ready to make an impact?',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: cs.onPrimaryContainer.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.volunteer_activism_rounded,
-                size: 48, color: cs.primary.withOpacity(0.6)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1565C0).withOpacity(0.2),
+            const Color(0xFF0A1628),
           ],
         ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          const Icon(Icons.volunteer_activism,
+              size: 32, color: Color(0xFF42A5F5)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hello, $name 👋',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Ready to make an impact?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFFB0C4DE),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -397,103 +426,119 @@ class _AssignmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(left: BorderSide(color: _green, width: 4)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1B3A1B), Color(0xFF0A1628)],
         ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Label
-            const Text(
-              'ACTIVE ASSIGNMENT',
-              style: TextStyle(
-                color: _green,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-              ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF4CAF50).withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ACTIVE ASSIGNMENT',
+            style: TextStyle(
+              color: _green,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
             ),
-            const SizedBox(height: 8),
-
-            // Need title
-            Text(
-              _needTitle,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _needTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-
-            // District
-            if (_district.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.location_on_outlined,
-                      size: 14, color: Colors.grey.shade500),
-                  const SizedBox(width: 4),
-                  Text(
-                    _district,
-                    style: TextStyle(
-                        fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ],
-
-            // Assigned at
-            if (_assignedAt.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Icon(Icons.schedule, size: 13, color: Colors.grey.shade400),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Assigned: $_assignedAt',
-                    style: TextStyle(
-                        fontSize: 11, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: 16),
-
-            // Action buttons
+          ),
+          if (_district.isNotEmpty) ...[
+            const SizedBox(height: 4),
             Row(
               children: [
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _green,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: onAccept,
-                    child: const Text('Accept Assignment'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _green,
-                      side: const BorderSide(color: _green),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: onComplete,
-                    child: const Text('Complete'),
+                const Icon(Icons.location_on_outlined,
+                    size: 14, color: Color(0xFF6B8CAE)),
+                const SizedBox(width: 4),
+                Text(
+                  _district,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6B8CAE),
                   ),
                 ),
               ],
             ),
           ],
-        ),
+          if (_assignedAt.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 13, color: Color(0xFF6B8CAE)),
+                const SizedBox(width: 4),
+                Text(
+                  'Assigned: $_assignedAt',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF6B8CAE),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2E7D32).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: onAccept,
+                  child: const Text('Accept Assignment'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _green,
+                  side: const BorderSide(color: _green),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: onComplete,
+                child: const Text('Complete'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -74,6 +74,13 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  Color _darkenColor(Color color, [double amount = 0.25]) {
+    final hsl = HSLColor.fromColor(color);
+    final darkened =
+        hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return darkened.toColor();
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
@@ -155,11 +162,33 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0A1628),
       appBar: AppBar(
-        title: const Text('Community Needs'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A1628), Color(0xFF1565C0)],
+            ),
+          ),
+        ),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Color(0xFF90CAF9)],
+          ).createShader(bounds),
+          child: const Text(
+            'Community Needs',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sort_rounded),
+            icon: const Icon(Icons.sort_rounded, color: Colors.white),
             tooltip: 'Sort',
             onPressed: () {},
           ),
@@ -171,19 +200,41 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
           // ── Search bar ─────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search needs by title or location…',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () => _searchController.clear(),
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                isDense: true,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A2744),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFF2A4A7F),
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, size: 20, color: Color(0xFF6B8CAE)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(color: Colors.white),
+                      cursorColor: const Color(0xFF1565C0),
+                      decoration: InputDecoration(
+                        hintText: 'Search needs by title or location…',
+                        hintStyle: const TextStyle(color: Color(0xFF6B8CAE)),
+                        border: InputBorder.none,
+                        isDense: true,
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear,
+                                    size: 18, color: Color(0xFF6B8CAE)),
+                                onPressed: () => _searchController.clear(),
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -199,19 +250,50 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
                 // "All" chip
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: const Text('All'),
-                    avatar: const Icon(Icons.apps_rounded, size: 16),
-                    selected: _selectedCategory == null,
-                    onSelected: (_) => _selectCategory(null),
-                    selectedColor: cs.primaryContainer,
-                    checkmarkColor: cs.primary,
-                    labelStyle: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: _selectedCategory == null
-                          ? cs.primary
-                          : cs.onSurface,
-                      fontSize: 12,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _selectCategory(null),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: _selectedCategory == null
+                              ? LinearGradient(
+                                  colors: [
+                                    cs.primary,
+                                    _darkenColor(cs.primary),
+                                  ],
+                                )
+                              : null,
+                          color: _selectedCategory == null
+                              ? null
+                              : const Color(0xFF1A2744),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: (_selectedCategory == null
+                                    ? cs.primary
+                                    : cs.primary.withOpacity(0.4)),
+                            width: 1,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.apps_rounded, size: 16, color: Colors.white),
+                            SizedBox(width: 6),
+                            Text(
+                              'All',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -220,29 +302,63 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
                   final isSelected = _selectedCategory == cat.label;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      avatar: Icon(cat.icon,
-                          size: 15,
-                          color: isSelected ? cat.color : Colors.grey),
-                      label: Text(
-                        _toTitleCase(cat.label),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected ? cat.color : cs.onSurface,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () =>
+                            _selectCategory(isSelected ? null : cat.label),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      cat.color,
+                                      _darkenColor(cat.color),
+                                    ],
+                                  )
+                                : null,
+                            color:
+                                isSelected ? null : const Color(0xFF1A2744),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? cat.color
+                                  : cat.color.withOpacity(0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                cat.icon,
+                                size: 15,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF6B8CAE),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _toTitleCase(cat.label),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : const Color(0xFF6B8CAE),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      selected: isSelected,
-                      onSelected: (_) =>
-                          _selectCategory(isSelected ? null : cat.label),
-                      selectedColor: cat.color.withOpacity(0.15),
-                      side: BorderSide(
-                        color: isSelected
-                            ? cat.color.withOpacity(0.6)
-                            : Colors.grey.shade300,
-                        width: 0.8,
-                      ),
-                      showCheckmark: false,
                     ),
                   );
                 }),
@@ -251,7 +367,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
           ),
 
           const SizedBox(height: 6),
-          const Divider(height: 1, thickness: 0.5),
+          Divider(height: 1, thickness: 0.5, color: Colors.white.withOpacity(0.12)),
 
           // ── Results count ─────────────────────────────────────────────
           if (!_isLoading && _error == null)
@@ -260,8 +376,10 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 '${_filteredNeeds.length} need${_filteredNeeds.length == 1 ? '' : 's'} found',
-                style: TextStyle(
-                    fontSize: 12, color: cs.onSurface.withOpacity(0.55)),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6B8CAE),
+                ),
               ),
             ),
 
@@ -299,21 +417,21 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off_rounded,
-              size: 56, color: cs.onSurface.withOpacity(0.3)),
+              size: 56, color: Colors.white.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text(
             'No needs found',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: cs.onSurface.withOpacity(0.5),
+              color: Colors.white.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Try a different category or search term',
             style: TextStyle(
-                fontSize: 13, color: cs.onSurface.withOpacity(0.4)),
+                fontSize: 13, color: Colors.white.withOpacity(0.45)),
           ),
           const SizedBox(height: 20),
           OutlinedButton.icon(
@@ -341,14 +459,14 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
             const SizedBox(height: 16),
             const Text(
               'Could not load needs',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
             ),
             const SizedBox(height: 6),
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withOpacity(0.55)),
+                  fontSize: 12, color: Colors.white.withOpacity(0.65)),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -364,8 +482,8 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
 
   Widget _buildShimmer() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
+      baseColor: const Color(0xFF1A2744),
+      highlightColor: const Color(0xFF22355A),
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         itemCount: 6,
@@ -373,7 +491,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
         itemBuilder: (_, __) => Container(
           height: 110,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF1A2744),
             borderRadius: BorderRadius.circular(12),
           ),
         ),

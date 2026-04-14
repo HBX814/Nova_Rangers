@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -119,11 +120,33 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A1628),
       appBar: AppBar(
-        title: const Text('My Profile'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A1628), Color(0xFF1565C0)],
+            ),
+          ),
+        ),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Color(0xFF90CAF9)],
+          ).createShader(bounds),
+          child: const Text(
+            'My Profile',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _loadProfile,
             tooltip: 'Refresh',
           ),
@@ -174,15 +197,24 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           Center(
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundColor: cs.primary,
+                Container(
+                  width: 120,
+                  height: 120,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                    ),
+                    borderRadius: BorderRadius.circular(60),
+                  ),
                   child: Text(
                     initials,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -190,7 +222,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                 Text(
                   name,
                   style: tt.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                      ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
@@ -198,20 +230,28 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded,
-                        color: Color(0xFFF59E0B), size: 20),
+                    CustomPaint(
+                      size: const Size(42, 42),
+                      painter: _PerformanceArcPainter(
+                        progress: (score / 5).clamp(0.0, 1.0),
+                      ),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       score.toStringAsFixed(1),
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'performance score',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: cs.onSurface.withOpacity(0.5)),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B8CAE),
+                      ),
                     ),
                   ],
                 ),
@@ -225,9 +265,10 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                       const SizedBox(width: 2),
                       Text(
                         district,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: cs.onSurface.withOpacity(0.55)),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B8CAE),
+                        ),
                       ),
                     ],
                   ),
@@ -325,12 +366,21 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                       avatar: const Icon(Icons.bolt, size: 14),
                       label: Text(
                         skill,
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFB0C4DE),
+                        ),
                       ),
-                      backgroundColor:
-                          cs.secondaryContainer.withOpacity(0.6),
-                      side: BorderSide(
-                          color: cs.secondary.withOpacity(0.3), width: 0.8),
+                      backgroundColor: Colors.transparent,
+                      side: const BorderSide(color: Colors.transparent),
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side:
+                            const BorderSide(color: Color(0xFF2A5298), width: 1),
+                      ),
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   )
                   .toList(),
@@ -450,13 +500,19 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                 size: 56, color: cs.error.withOpacity(0.7)),
             const SizedBox(height: 16),
             const Text('Could not load profile',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                )),
             const SizedBox(height: 6),
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withOpacity(0.55)),
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.65),
+              ),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -469,4 +525,46 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
       ),
     );
   }
+}
+
+class _PerformanceArcPainter extends CustomPainter {
+  _PerformanceArcPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = 8.0;
+    final rect = Rect.fromLTWH(
+      strokeWidth / 2,
+      strokeWidth / 2,
+      size.width - strokeWidth,
+      size.height - strokeWidth,
+    );
+    final center = Offset(size.width / 2, size.height / 2);
+
+    final basePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF2A4A7F);
+    canvas.drawArc(rect, 0, 2 * math.pi, false, basePaint);
+
+    final arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+      ).createShader(Rect.fromCircle(center: center, radius: size.width / 2));
+
+    final sweep = (2 * math.pi) * progress.clamp(0.0, 1.0);
+    canvas.drawArc(rect, -math.pi / 2, sweep, false, arcPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PerformanceArcPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

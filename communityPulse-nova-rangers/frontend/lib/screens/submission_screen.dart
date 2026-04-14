@@ -6,16 +6,6 @@ import 'package:shimmer/shimmer.dart';
 
 import '../services/api_service.dart';
 
-// ── Organisation list (replace with a live /organisations fetch if available) ─
-
-const _kOrganisations = [
-  _Org(id: 'org-001', name: 'Madhya Pradesh Relief Fund'),
-  _Org(id: 'org-002', name: 'Jan Seva Foundation'),
-  _Org(id: 'org-003', name: 'Bhopal Aid Society'),
-  _Org(id: 'org-004', name: 'Narmada Sewa Samiti'),
-  _Org(id: 'org-005', name: 'Rural Health Initiative'),
-];
-
 class _Org {
   const _Org({required this.id, required this.name});
   final String id;
@@ -43,13 +33,47 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
 
   bool _isUploading = false;
   String? _uploadError;
+  List<_Org> _organizations = [];
+  bool _isLoadingOrganizations = true;
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrganizations();
+  }
 
   @override
   void dispose() {
     _submittedByController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadOrganizations() async {
+    setState(() {
+      _isLoadingOrganizations = true;
+    });
+    try {
+      final orgs = await ApiService.instance.fetchOrganizations();
+      if (!mounted) return;
+      setState(() {
+        _organizations = orgs
+            .map((org) => _Org(
+                  id: (org['org_id'] ?? org['id'] ?? '').toString(),
+                  name: (org['name'] ?? 'Unnamed organization').toString(),
+                ))
+            .where((org) => org.id.isNotEmpty)
+            .toList();
+        _isLoadingOrganizations = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _organizations = [];
+        _isLoadingOrganizations = false;
+      });
+    }
   }
 
   // ── File picker ────────────────────────────────────────────────────────────
@@ -94,7 +118,7 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
       setState(() => _uploadError = 'Please select a file before uploading.');
       return;
     }
-    if (_selectedOrgId == null) {
+    if (_selectedOrgId == null || _selectedOrgId!.isEmpty) {
       setState(() => _uploadError = 'Please select an organisation.');
       return;
     }
@@ -155,8 +179,30 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0A1628),
       appBar: AppBar(
-        title: const Text('Submit Field Report'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0A1628), Color(0xFF1565C0)],
+            ),
+          ),
+        ),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Color(0xFF90CAF9)],
+          ).createShader(bounds),
+          child: const Text(
+            'Submit Field Report',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
         centerTitle: false,
       ),
       body: _isUploading ? _buildUploadingShimmer() : _buildForm(context, cs),
@@ -209,21 +255,29 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Section header ────────────────────────────────────────────
-            Text(
-              'Upload a Field Report',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Color(0xFF90CAF9)],
+              ).createShader(bounds),
+              child: const Text(
+                'Upload a Field Report',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Attach a JSON report file collected in the field. '
               'Our AI agents will classify, deduplicate and route it automatically.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: cs.onSurface.withOpacity(0.55)),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF6B8CAE),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -248,27 +302,50 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
             const SizedBox(height: 16),
 
             // ── Organisation dropdown ──────────────────────────────────────
-            DropdownButtonFormField<String>(
-              value: _selectedOrgId,
-              decoration: const InputDecoration(
-                labelText: 'Organisation',
-                prefixIcon: Icon(Icons.business_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A2744),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF2A4A7F), width: 1),
               ),
-              items: _kOrganisations
-                  .map(
-                    (org) => DropdownMenuItem(
-                      value: org.id,
-                      child: Text(org.name, overflow: TextOverflow.ellipsis),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedOrgId = v),
-              validator: (v) =>
-                  v == null ? 'Please select an organisation.' : null,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: DropdownButtonFormField<String>(
+                value: _selectedOrgId,
+                dropdownColor: const Color(0xFF1A2744),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Organisation',
+                  labelStyle: TextStyle(color: Color(0xFF6B8CAE)),
+                  prefixIcon: Icon(Icons.business_outlined, color: Color(0xFF6B8CAE)),
+                  border: InputBorder.none,
+                ),
+                items: _organizations
+                    .map(
+                      (org) => DropdownMenuItem(
+                        value: org.id,
+                        child: Text(org.name, overflow: TextOverflow.ellipsis),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedOrgId = v),
+                validator: (v) => v == null || v.isEmpty
+                    ? 'Please select an organisation.'
+                    : null,
+              ),
             ),
+            if (_isLoadingOrganizations) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Loading organisations...',
+                style: TextStyle(fontSize: 12),
+              ),
+            ] else if (_organizations.isEmpty) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'No organisations available from backend.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 20),
 
             // ── File picker ───────────────────────────────────────────────
@@ -290,19 +367,40 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
             const SizedBox(height: 28),
 
             // ── Upload button ─────────────────────────────────────────────
-            SizedBox(
+            Container(
               width: double.infinity,
-              height: 52,
-              child: FilledButton.icon(
-                onPressed: _isUploading ? null : _handleUpload,
-                icon: const Icon(Icons.cloud_upload_outlined),
-                label: const Text(
-                  'Upload Report',
-                  style: TextStyle(fontSize: 16),
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
                 ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1565C0).withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: FilledButton(
+                onPressed: _isUploading ? null : _handleUpload,
                 style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  disabledBackgroundColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Upload Report',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -333,57 +431,121 @@ class _FilePicker extends StatelessWidget {
 
     return GestureDetector(
       onTap: onPick,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
+        height: 200,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: hasFile
-              ? cs.primaryContainer.withOpacity(0.4)
-              : cs.surfaceContainerHighest.withOpacity(0.35),
-          border: Border.all(
-            color: hasFile
-                ? cs.primary.withOpacity(0.6)
-                : cs.onSurface.withOpacity(0.25),
-            width: 1.5,
-            strokeAlign: BorderSide.strokeAlignInside,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A2744), Color(0xFF0F1B2D)],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
+          border: hasFile
+              ? Border.all(color: const Color(0xFF4CAF50), width: 1.5)
+              : null,
         ),
-        child: Column(
-          children: [
-            Icon(
-              hasFile ? Icons.insert_drive_file : Icons.upload_file,
-              size: 36,
-              color: hasFile ? cs.primary : cs.onSurface.withOpacity(0.4),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              hasFile
-                  ? file!.name
-                  : 'Tap to select a file (PDF / JPEG / PNG)',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: hasFile ? FontWeight.w600 : FontWeight.normal,
-                color: hasFile ? cs.primary : cs.onSurface.withOpacity(0.5),
+        child: CustomPaint(
+          painter: hasFile
+              ? null
+              : _DashedBorderPainter(
+                  color: const Color(0xFF2A5298),
+                  dashWidth: 8,
+                  dashSpace: 4,
+                  radius: 20,
+                ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1565C0).withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.cloud_upload,
+                      size: 56,
+                      color: hasFile
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFF1565C0),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    hasFile
+                        ? file!.name
+                        : 'Tap to select a file (PDF / JPEG / PNG)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: hasFile ? FontWeight.w600 : FontWeight.normal,
+                      color: hasFile
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFF6B8CAE),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-            if (hasFile) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Tap to change',
-                style: TextStyle(
-                    fontSize: 11, color: cs.onSurface.withOpacity(0.4)),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.dashWidth,
+    required this.dashSpace,
+    required this.radius,
+  });
+
+  final Color color;
+  final double dashWidth;
+  final double dashSpace;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0.75, 0.75, size.width - 1.5, size.height - 1.5),
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final next = (distance + dashWidth).clamp(0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, next.toDouble()), paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.dashWidth != dashWidth ||
+      oldDelegate.dashSpace != dashSpace ||
+      oldDelegate.radius != radius;
 }
 
 // ── Error banner ──────────────────────────────────────────────────────────────

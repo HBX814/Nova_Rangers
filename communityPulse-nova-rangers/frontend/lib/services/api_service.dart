@@ -87,6 +87,16 @@ class ApiService {
     }
   }
 
+  /// GET /needs/{needId}
+  Future<Map<String, dynamic>> fetchNeedById(String needId) async {
+    try {
+      final res = await http.get(_uri('/needs/$needId'));
+      return _decodeMap(res, 'fetchNeedById');
+    } on http.ClientException catch (e) {
+      throw Exception('fetchNeedById: network error — $e');
+    }
+  }
+
   /// GET /needs/heatmap
   Future<List<Map<String, dynamic>>> fetchHeatmapNeeds() async {
     try {
@@ -160,6 +170,27 @@ class ApiService {
       return _decodeList(res, 'fetchAnalyticsByCategory');
     } on http.ClientException catch (e) {
       throw Exception('fetchAnalyticsByCategory: network error — $e');
+    }
+  }
+
+  /// GET /organizations
+  Future<List<Map<String, dynamic>>> fetchOrganizations() async {
+    try {
+      final res = await http.get(_uri('/organizations'));
+      return _decodeList(res, 'fetchOrganizations');
+    } on http.ClientException catch (e) {
+      throw Exception('fetchOrganizations: network error — $e');
+    }
+  }
+
+  /// GET /volunteers/{volunteerId}/assignments
+  Future<List<Map<String, dynamic>>> fetchVolunteerAssignments(
+      String volunteerId) async {
+    try {
+      final res = await http.get(_uri('/volunteers/$volunteerId/assignments'));
+      return _decodeList(res, 'fetchVolunteerAssignments');
+    } on http.ClientException catch (e) {
+      throw Exception('fetchVolunteerAssignments: network error — $e');
     }
   }
 }
