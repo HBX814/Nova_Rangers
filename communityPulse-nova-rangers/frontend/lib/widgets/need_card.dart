@@ -104,12 +104,12 @@ class NeedCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF2A4A7F).withOpacity(0.4),
+          color: const Color(0xFF2A4A7F).withValues(alpha: 0.4),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.2),
+            color: const Color(0xFF000000).withValues(alpha: 0.2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -154,7 +154,7 @@ class NeedCard extends StatelessWidget {
                                   end: Alignment.bottomRight,
                                   colors: [
                                     _catColor,
-                                    _catColor.withOpacity(0.6),
+                                    _catColor.withValues(alpha: 0.6),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(12),
@@ -281,9 +281,9 @@ class _CategoryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35), width: 0.8),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 0.8),
       ),
       child: Text(
         category,
@@ -318,7 +318,7 @@ class StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: Colors.transparent,
-        border: Border.all(color: color.withOpacity(0.85), width: 0.9),
+        border: Border.all(color: color.withValues(alpha: 0.85), width: 0.9),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

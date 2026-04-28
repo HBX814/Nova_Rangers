@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -309,7 +308,7 @@ class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
         child: Column(
           children: [
             Icon(Icons.cloud_off_rounded,
-                size: 56, color: cs.error.withOpacity(0.7)),
+                size: 56, color: cs.error.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
             const Text('Could not load data',
                 style:
@@ -319,7 +318,7 @@ class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withOpacity(0.55)),
+                  fontSize: 12, color: cs.onSurface.withValues(alpha: 0.55)),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -351,7 +350,7 @@ class _GreetingCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF1565C0).withOpacity(0.2),
+            const Color(0xFF1565C0).withValues(alpha: 0.2),
             const Color(0xFF0A1628),
           ],
         ),
@@ -435,7 +434,7 @@ class _AssignmentCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF4CAF50).withOpacity(0.5),
+          color: const Color(0xFF4CAF50).withValues(alpha: 0.5),
           width: 2,
         ),
       ),
@@ -508,7 +507,7 @@ class _AssignmentCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2E7D32).withOpacity(0.4),
+                      color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
                       blurRadius: 15,
                       offset: const Offset(0, 6),
                     ),
@@ -666,7 +665,7 @@ class _StatTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -680,7 +679,7 @@ class _StatTile extends StatelessWidget {
                         fontSize: 22, fontWeight: FontWeight.bold)),
                 Text(label,
                     style: TextStyle(
-                        fontSize: 11, color: cs.onSurface.withOpacity(0.55))),
+                        fontSize: 11, color: cs.onSurface.withValues(alpha: 0.55))),
               ],
             ),
           ],

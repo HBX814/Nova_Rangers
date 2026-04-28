@@ -89,18 +89,16 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
     if (platformFile == null || bytes == null) {
       return;
     }
-    final XFile? file = XFile.fromData(
+    final XFile file = XFile.fromData(
       bytes,
       name: platformFile.name,
       mimeType: _mimeTypeFromName(platformFile.name),
     );
-    if (file != null) {
-      setState(() {
-        _pickedFile = file;
-        _uploadError = null;
-      });
+    setState(() {
+      _pickedFile = file;
+      _uploadError = null;
+    });
     }
-  }
 
   String _mimeTypeFromName(String fileName) {
     final lower = fileName.toLowerCase();
@@ -271,10 +269,10 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'Attach a JSON report file collected in the field. '
               'Our AI agents will classify, deduplicate and route it automatically.',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF6B8CAE),
               ),
@@ -310,7 +308,7 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: DropdownButtonFormField<String>(
-                value: _selectedOrgId,
+                initialValue: _selectedOrgId,
                 dropdownColor: const Color(0xFF1A2744),
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
@@ -379,7 +377,7 @@ class _SubmissionScreenState extends ConsumerState<SubmissionScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1565C0).withOpacity(0.4),
+                    color: const Color(0xFF1565C0).withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -464,7 +462,7 @@ class _FilePicker extends StatelessWidget {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1565C0).withOpacity(0.4),
+                          color: const Color(0xFF1565C0).withValues(alpha: 0.4),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -562,8 +560,8 @@ class _ErrorBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: cs.errorContainer.withOpacity(0.35),
-        border: Border.all(color: cs.error.withOpacity(0.5), width: 0.8),
+        color: cs.errorContainer.withValues(alpha: 0.35),
+        border: Border.all(color: cs.error.withValues(alpha: 0.5), width: 0.8),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -587,7 +585,7 @@ class _ErrorBanner extends StatelessWidget {
                   message,
                   style: TextStyle(
                       fontSize: 11,
-                      color: cs.onErrorContainer.withOpacity(0.8)),
+                      color: cs.onErrorContainer.withValues(alpha: 0.8)),
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -638,7 +636,7 @@ class _SuccessDialog extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.12),
+                color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -660,7 +658,7 @@ class _SuccessDialog extends StatelessWidget {
             Text(
               'Your field report has been queued for AI processing.',
               style: TextStyle(
-                  fontSize: 13, color: cs.onSurface.withOpacity(0.6)),
+                  fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -671,7 +669,7 @@ class _SuccessDialog extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withOpacity(0.5),
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -682,7 +680,7 @@ class _SuccessDialog extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: cs.onSurface.withOpacity(0.5),
+                        color: cs.onSurface.withValues(alpha: 0.5),
                         letterSpacing: 0.5),
                   ),
                   const SizedBox(height: 4),

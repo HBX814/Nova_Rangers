@@ -244,7 +244,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [color.withOpacity(0.9), color.withOpacity(0.55)],
+                            colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.55)],
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -321,7 +321,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               shaderCallback: (bounds) => LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [color.withOpacity(0.9), color.withOpacity(0.5)],
+                colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.5)],
               ).createShader(bounds),
               child: LinearProgressIndicator(
                 value: ratio,

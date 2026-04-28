@@ -246,9 +246,9 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(
+                    const Text(
                       'performance score',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF6B8CAE),
                       ),
@@ -300,11 +300,11 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                     ? 'You are visible to coordinators'
                     : 'You will not receive new tasks',
                 style: TextStyle(
-                    fontSize: 12, color: cs.onSurface.withOpacity(0.55)),
+                    fontSize: 12, color: cs.onSurface.withValues(alpha: 0.55)),
               ),
               value: _isAvailable,
               onChanged: _isUpdatingStatus ? null : _toggleAvailability,
-              activeColor: const Color(0xFF2E7D32),
+              activeThumbColor: const Color(0xFF2E7D32),
             ),
           ),
           const SizedBox(height: 16),
@@ -321,7 +321,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32).withOpacity(0.12),
+                      color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.check_circle_outline,
@@ -340,7 +340,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                         'Tasks completed',
                         style: TextStyle(
                             fontSize: 13,
-                            color: cs.onSurface.withOpacity(0.55)),
+                            color: cs.onSurface.withValues(alpha: 0.55)),
                       ),
                     ],
                   ),
@@ -497,7 +497,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.person_off_outlined,
-                size: 56, color: cs.error.withOpacity(0.7)),
+                size: 56, color: cs.error.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
             const Text('Could not load profile',
                 style: TextStyle(
@@ -511,7 +511,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withOpacity(0.65),
+                color: Colors.white.withValues(alpha: 0.65),
               ),
             ),
             const SizedBox(height: 20),
@@ -534,7 +534,7 @@ class _PerformanceArcPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final strokeWidth = 8.0;
+    const strokeWidth = 8.0;
     final rect = Rect.fromLTWH(
       strokeWidth / 2,
       strokeWidth / 2,

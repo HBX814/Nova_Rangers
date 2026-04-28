@@ -149,7 +149,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1565C0).withOpacity(0.5),
+              color: const Color(0xFF1565C0).withValues(alpha: 0.5),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -169,16 +169,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                const Color(0xFF0A1628),
-                const Color(0xFF0D2137),
-                const Color(0xFF1A2744),
+                Color(0xFF0A1628),
+                Color(0xFF0D2137),
+                Color(0xFF1A2744),
               ],
-              stops: const [0.0, 0.34, 1.0],
+              stops: [0.0, 0.34, 1.0],
             ),
           ),
           child: SingleChildScrollView(
@@ -228,19 +228,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 borderRadius: BorderRadius.circular(20),
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF1E2D4A).withOpacity(0.9),
-                    const Color(0xFF162236).withOpacity(0.9),
+                    const Color(0xFF1E2D4A).withValues(alpha: 0.9),
+                    const Color(0xFF162236).withValues(alpha: 0.9),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 border: Border.all(
-                  color: const Color(0xFF2A5298).withOpacity(0.5),
+                  color: const Color(0xFF2A5298).withValues(alpha: 0.5),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF000000).withOpacity(0.25),
+                    color: const Color(0xFF000000).withValues(alpha: 0.25),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -374,11 +374,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         child: Column(
           children: [
             Icon(Icons.check_circle_outline,
-                size: 48, color: cs.primary.withOpacity(0.4)),
+                size: 48, color: cs.primary.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(
               'No urgent needs right now',
-              style: TextStyle(color: cs.onSurface.withOpacity(0.5)),
+              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
             ),
           ],
         ),
@@ -395,7 +395,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         child: Column(
           children: [
             Icon(Icons.cloud_off_rounded,
-                size: 56, color: cs.error.withOpacity(0.7)),
+                size: 56, color: cs.error.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
             Text(
               'Could not load data',
@@ -407,7 +407,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withOpacity(0.55)),
+                  fontSize: 12, color: cs.onSurface.withValues(alpha: 0.55)),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -537,8 +537,8 @@ class SummaryCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      color.withOpacity(0.95),
-                      color.withOpacity(0.55),
+                      color.withValues(alpha: 0.95),
+                      color.withValues(alpha: 0.55),
                     ],
                   ),
                 ),
@@ -590,12 +590,12 @@ class _GlassCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF2A5298).withOpacity(0.5),
+          color: const Color(0xFF2A5298).withValues(alpha: 0.5),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.3),
+            color: const Color(0xFF000000).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -639,7 +639,7 @@ class NeedCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.24 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.05),
             blurRadius: isDark ? 12 : 18,
             offset: const Offset(0, 8),
           ),
@@ -662,7 +662,7 @@ class NeedCard extends StatelessWidget {
                   end: Alignment.bottomRight,
                   colors: [
                     isDark ? cs.surfaceContainerHighest : Colors.white,
-                    isDark ? cs.surfaceContainer : catColor.withOpacity(0.06),
+                    isDark ? cs.surfaceContainer : catColor.withValues(alpha: 0.06),
                   ],
                 ),
               ),
@@ -680,7 +680,7 @@ class NeedCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
-                          color: catColor.withOpacity(0.35),
+                          color: catColor.withValues(alpha: 0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -723,7 +723,7 @@ class NeedCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: catColor.withOpacity(0.12),
+                                color: catColor.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -732,7 +732,7 @@ class NeedCard extends StatelessWidget {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: isDark
-                                      ? catColor.withOpacity(0.92)
+                                      ? catColor.withValues(alpha: 0.92)
                                       : catColor,
                                 ),
                               ),
@@ -742,13 +742,13 @@ class NeedCard extends StatelessWidget {
                             if (district.isNotEmpty) ...[
                               Icon(Icons.location_on,
                                   size: 12,
-                                  color: cs.onSurface.withOpacity(0.5)),
+                                  color: cs.onSurface.withValues(alpha: 0.5)),
                               const SizedBox(width: 2),
                               Text(
                                 district,
                                style: TextStyle(
                                   fontSize: 12,
-                                  color: cs.onSurface.withOpacity(0.70),
+                                  color: cs.onSurface.withValues(alpha: 0.70),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -766,7 +766,7 @@ class NeedCard extends StatelessWidget {
 
                   const SizedBox(width: 4),
                   Icon(Icons.chevron_right,
-                      size: 18, color: cs.onSurface.withOpacity(0.35)),
+                      size: 18, color: cs.onSurface.withValues(alpha: 0.35)),
                 ],
               ),
             ),
@@ -795,8 +795,8 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        border: Border.all(color: color.withOpacity(0.4), width: 0.8),
+        color: color.withValues(alpha: 0.10),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 0.8),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

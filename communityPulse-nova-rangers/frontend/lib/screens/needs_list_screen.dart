@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../config.dart';
 import '../services/api_service.dart';
 import '../widgets/need_card.dart';
 
@@ -274,7 +273,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
                           border: Border.all(
                             color: (_selectedCategory == null
                                     ? cs.primary
-                                    : cs.primary.withOpacity(0.4)),
+                                    : cs.primary.withValues(alpha: 0.4)),
                             width: 1,
                           ),
                         ),
@@ -330,7 +329,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
                             border: Border.all(
                               color: isSelected
                                   ? cat.color
-                                  : cat.color.withOpacity(0.4),
+                                  : cat.color.withValues(alpha: 0.4),
                               width: 1,
                             ),
                           ),
@@ -367,7 +366,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
           ),
 
           const SizedBox(height: 6),
-          Divider(height: 1, thickness: 0.5, color: Colors.white.withOpacity(0.12)),
+          Divider(height: 1, thickness: 0.5, color: Colors.white.withValues(alpha: 0.12)),
 
           // ── Results count ─────────────────────────────────────────────
           if (!_isLoading && _error == null)
@@ -417,21 +416,21 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off_rounded,
-              size: 56, color: Colors.white.withOpacity(0.3)),
+              size: 56, color: Colors.white.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           Text(
             'No needs found',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Try a different category or search term',
             style: TextStyle(
-                fontSize: 13, color: Colors.white.withOpacity(0.45)),
+                fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
           ),
           const SizedBox(height: 20),
           OutlinedButton.icon(
@@ -455,7 +454,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.cloud_off_rounded,
-                size: 56, color: cs.error.withOpacity(0.7)),
+                size: 56, color: cs.error.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
             const Text(
               'Could not load needs',
@@ -466,7 +465,7 @@ class _NeedsListScreenState extends ConsumerState<NeedsListScreen> {
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 12, color: Colors.white.withOpacity(0.65)),
+                  fontSize: 12, color: Colors.white.withValues(alpha: 0.65)),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(

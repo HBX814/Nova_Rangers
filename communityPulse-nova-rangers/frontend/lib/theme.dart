@@ -23,9 +23,9 @@ abstract final class AppTheme {
   // ── Shared component themes ───────────────────────────────────────────────
 
   static final _cardTheme = CardThemeData(
-    color: _cardBase.withOpacity(0.8),
+    color: _cardBase.withValues(alpha: 0.8),
     elevation: 0,
-    shadowColor: _shadowBase.withOpacity(0.3),
+    shadowColor: _shadowBase.withValues(alpha: 0.3),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
       side: const BorderSide(color: _cardBorder, width: 1),
@@ -33,15 +33,15 @@ abstract final class AppTheme {
     clipBehavior: Clip.antiAlias,
   );
 
-  static final _appBarTheme = AppBarTheme(
+  static const _appBarTheme = AppBarTheme(
     backgroundColor: _scaffoldStart,
     foregroundColor: _white,
     elevation: 0,
     centerTitle: false,
-    shape: const Border(
+    shape: Border(
       bottom: BorderSide(color: _seedColor, width: 1),
     ),
-    titleTextStyle: const TextStyle(
+    titleTextStyle: TextStyle(
       fontFamily: 'NotoSans',
       fontSize: 20,
       fontWeight: FontWeight.w700,
@@ -54,7 +54,7 @@ abstract final class AppTheme {
       backgroundColor: _buttonStart,
       foregroundColor: _white,
       elevation: 4,
-      shadowColor: _buttonStart.withOpacity(0.4),
+      shadowColor: _buttonStart.withValues(alpha: 0.4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
       ),
@@ -178,7 +178,7 @@ abstract final class AppTheme {
 
   static final cardShadow = [
     BoxShadow(
-      color: _shadowBase.withOpacity(0.3),
+      color: _shadowBase.withValues(alpha: 0.3),
       blurRadius: 20,
       spreadRadius: 0,
       offset: const Offset(0, 8),
@@ -196,7 +196,7 @@ abstract final class AppTheme {
   );
 
   static final glassCardDecoration = BoxDecoration(
-    color: _cardBase.withOpacity(0.8),
+    color: _cardBase.withValues(alpha: 0.8),
     borderRadius: BorderRadius.circular(16),
     border: Border.all(color: _cardBorder, width: 1),
     boxShadow: cardShadow,
@@ -207,7 +207,7 @@ abstract final class AppTheme {
     borderRadius: BorderRadius.circular(14),
     boxShadow: [
       BoxShadow(
-        color: _buttonStart.withOpacity(0.4),
+        color: _buttonStart.withValues(alpha: 0.4),
         blurRadius: 12,
         spreadRadius: 0,
         offset: const Offset(0, 6),

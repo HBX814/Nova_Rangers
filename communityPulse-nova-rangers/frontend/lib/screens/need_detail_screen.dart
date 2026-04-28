@@ -57,7 +57,7 @@ class _NeedDetailScreenState extends State<NeedDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.cloud_off_rounded,
-                            size: 52, color: cs.error.withOpacity(0.75)),
+                            size: 52, color: cs.error.withValues(alpha: 0.75)),
                         const SizedBox(height: 12),
                         const Text(
                           'Could not load need details',
@@ -68,7 +68,7 @@ class _NeedDetailScreenState extends State<NeedDetailScreen> {
                         Text(
                           _error!,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.65)),
                         ),
                         const SizedBox(height: 16),
                         FilledButton.icon(
